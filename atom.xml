@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>k32 home page</title>
+    <link href="https://erlang.moe/atom.xml" rel="self" />
+    <link href="https://erlang.moe" />
+    <id>https://erlang.moe/atom.xml</id>
+    <author>
+        <name>k32</name>
+        <email></email>
+    </author>
+    <updated>2019-10-11T00:00:00Z</updated>
+    <entry>
+    <title>Trace-based testing</title>
+    <link href="https://erlang.moe/posts/2019-10-11-hello-world.html" />
+    <id>https://erlang.moe/posts/2019-10-11-hello-world.html</id>
+    <published>2019-10-11T00:00:00Z</published>
+    <updated>2019-10-11T00:00:00Z</updated>
+    <summary type="html"><![CDATA[This is the post description]]></summary>
+</entry>
+
+</feed>
