@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2020-10-29 tor 21:29 -->
+<!-- 2020-10-29 tor 21:20 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Trace-based testing</title>
@@ -50,7 +50,7 @@ property-based testing.
 </p>
 
 <div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">1</span> Conventional approach</h2>
+<h2 id="org"><span class="section-number-2">1</span> <span class="done DONE">DONE</span> Conventional approach</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Typical component test usually follows the same common scenario: first
