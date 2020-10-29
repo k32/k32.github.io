@@ -6,7 +6,7 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>tor, 29 okt 2020 21:36:46 +0100</lastBuildDate>
+<lastBuildDate>tor, 29 okt 2020 22:02:25 +0100</lastBuildDate>
 <item>
   <title>Trace-based testing</title>
   <description><![CDATA[<div id="content">
@@ -596,7 +596,7 @@ actions!
 </div></div>]]></description>
   <link>https://blog.erlang.moe/2019-10-11-hello-world.html</link>
   <guid isPermaLink="false">https://blog.erlang.moe/2019-10-11-hello-world.html</guid>
-  <pubDate>tor, 29 okt 2020 21:29:00 +0100</pubDate>
+  <pubDate>fre, 11 okt 2019 02:00:00 +0200</pubDate>
 </item>
 </channel>
 </rss>
