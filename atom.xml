@@ -6,7 +6,7 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>tis, 01 dec 2020 20:04:05 +0100</lastBuildDate>
+<lastBuildDate>tis, 01 dec 2020 20:10:28 +0100</lastBuildDate>
 <item>
   <title>This messenger respects your privacy</title>
   <description><![CDATA[<div id="content">
@@ -75,8 +75,9 @@ any attention.
  <p>
 There are old cryptography tools that don't need centralized server,
 or mobile phone. They are modular enough, so the cyphertext can be
-embedded in DCT coefficient of cat pictures posted on @channel. In the
-current year this approach is a joke. It is extremely user unfriendly.
+embedded in DCT coefficients of cat pictures posted on @channel. In
+the current year this approach is a joke. It is extremely user
+unfriendly.
 </p>
 
  <p>
