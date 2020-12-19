@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Testing fault tolerant systems with snabbkaffe, the practice</title>
+<meta name="generator" content="Org mode" />
+<link rel="stylesheet" type="text/css" href="default.css"/>
+<link href="atom.xml" type="application/atom+xml" rel="alternate" title="k32's notebook"/>
+</head>
+<body>
+<div id="org-div-home-and-up">
+ <a accesskey="h" href=""> UP </a>
+ |
+ <a accesskey="H" href="index.html"> HOME </a>
+</div><div id="content">
+<h1 class="title">Testing fault tolerant systems with snabbkaffe, the practice</h1>
+<p>
+<a href="https://github.com/klarna/snabbkaffe">Snabbkaffe</a> is an Erlang library that simplifies testing of concurrent
+and non-deterministic systems. Today I am going to talk about its
+fault injection feature, that helps tuning supervision trees and
+verifying fault-tolerance of the system in general.
+</p>
+
+<p>
+Just to give a small recap<sup><a id="fnr.1" class="footref" href="#fn.1">1</a></sup> of how snabbakaffe works: first the
+system under test (SUT) runs and emits a structured event log
+(trace). We refer to this process as <i>run stage</i>. Then the trace is
+analyzed for various properties, such as presence or absence of
+certain events, "happens before" relationships and so on. This
+analysis is done offline, and we refer to it as <i>check stage</i>. Traces
+are emitted using <code>?tp(kind, Data)</code> macro, that can be used anywhere
+in the code of the SUT or a testcase. In the release build it becomes
+a regular debug message. But in the test build it can also be used to
+inject crashes into the system.
+</p>
+
+<p>
+Suppose we have a system with two processes under a supervision tree.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-erlang">
+</pre>
+</div>
+
+<p>
+On the high level a testcase with fault injection looks something like this:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-erlang"><span style="color: #729fcf;">-include_lib</span>(<span style="color: #ad7fa8; font-style: italic;">"snabbkaffe/include/snabbkaffe.hrl"</span>).
+
+...
+
+<span style="color: #edd400; font-weight: bold; font-style: italic;">my_testcase</span>(<span style="color: #eeeeaa;">Config</span>) -&gt;
+  ?<span style="color: #8ae234;">check_trace</span>(
+    <span style="color: #888a85;">%% </span><span style="color: #888a85;">Run stage:</span>
+    <span style="color: #729fcf; font-weight: bold;">begin</span>
+      ?<span style="color: #8ae234;">inject_crash</span>
+    <span style="color: #729fcf; font-weight: bold;">end</span>,
+    <span style="color: #888a85;">%% </span><span style="color: #888a85;">Check stage:</span>
+    <span style="color: #729fcf; font-weight: bold;">fun</span>(<span style="color: #eeeeaa;">Result</span>, <span style="color: #eeeeaa;">Trace</span>) -&gt;
+      ...
+    <span style="color: #729fcf; font-weight: bold;">end</span>).
+</pre>
+</div>
+
+
+<p>
+Let's consider a few real-life testcases where we used fault
+injection.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-erlang"><span style="color: #edd400; font-weight: bold; font-style: italic;">t_flush_on_crash</span>(<span style="color: #eeeeaa;">Config</span>) <span style="color: #729fcf; font-weight: bold;">when</span> <span style="color: #729fcf;">is_list</span>(<span style="color: #eeeeaa;">Config</span>) -&gt;
+  <span style="color: #eeeeaa;">NMessages</span> = 100,
+  <span style="color: #888a85;">%% </span><span style="color: #888a85;">1st node should process half of the payload before crashing:</span>
+  <span style="color: #eeeeaa;">CrashOffset</span> = <span style="color: #eeeeaa;">NMessages</span> <span style="color: #729fcf;">div</span> 2,
+  <span style="color: #eeeeaa;">Messages</span> = <span style="color: #8ae234; font-weight: bold;">lists</span>:<span style="color: #8ae234; font-weight: bold;">seq</span>(1, <span style="color: #eeeeaa;">NMessages</span>),
+  <span style="color: #eeeeaa;">PipeSpec</span> = [ {map, kflow_test_map, #{id =&gt; <span style="color: #ad7fa8; font-style: italic;">'1'</span>}}
+             , {aggregate, kflow_test_aggregate,
+                #{ id =&gt; 2
+                 , size =&gt; <span style="color: #eeeeaa;">NMessages</span>
+                 }}
+             ],
+  ?<span style="color: #8ae234;">check_trace</span>(
+     <span style="color: #888a85;">%% </span><span style="color: #888a85;">Run stage:</span>
+     <span style="color: #729fcf; font-weight: bold;">begin</span>
+       ?<span style="color: #8ae234;">inject_crash</span>( #{ ?<span style="color: #8ae234;">snk_kind</span> := kflow_test_map_seen_message
+                       , offset    := <span style="color: #eeeeaa;">CrashOffset</span>
+                       }
+                    , <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>:<span style="color: #8ae234; font-weight: bold;">always_crash</span>()
+                    ),
+       {ok, <span style="color: #eeeeaa;">Pipe</span>, <span style="color: #eeeeaa;">Feed</span>} = <span style="color: #8ae234; font-weight: bold;">kflow_pipe</span>:<span style="color: #8ae234; font-weight: bold;">start_link</span>(#{ id         =&gt; [test_pipe]
+                                                 , definition =&gt; <span style="color: #eeeeaa;">PipeSpec</span>
+                                                 }),
+       <span style="color: #888a85;">%% </span><span style="color: #888a85;">We expect this process to crash:</span>
+       <span style="color: #729fcf;">unlink</span>(<span style="color: #eeeeaa;">Pipe</span>),
+       <span style="color: #eeeeaa;">MRef</span> = <span style="color: #729fcf;">monitor</span>(process, <span style="color: #eeeeaa;">Pipe</span>),
+       <span style="color: #729fcf; font-weight: bold;">catch</span> <span style="color: #8ae234; font-weight: bold;">feed_pipe</span>(<span style="color: #eeeeaa;">Feed</span>, <span style="color: #eeeeaa;">Messages</span>),
+       <span style="color: #729fcf; font-weight: bold;">receive</span>
+         {<span style="color: #ad7fa8; font-style: italic;">'DOWN'</span>, <span style="color: #eeeeaa;">MRef</span>, process, <span style="color: #eeeeaa;">Pipe</span>, <span style="color: #eeeeaa;">_</span>} -&gt;<span style="color: #edd400; font-weight: bold; font-style: italic;"> </span>ok
+       <span style="color: #729fcf; font-weight: bold;">after</span> 10000 -&gt;
+           <span style="color: #729fcf;">error</span>(would_not_die)
+       <span style="color: #729fcf; font-weight: bold;">end</span>
+     <span style="color: #729fcf; font-weight: bold;">end</span>,
+     <span style="color: #888a85;">%% </span><span style="color: #888a85;">Check stage:</span>
+     <span style="color: #729fcf; font-weight: bold;">fun</span>(<span style="color: #eeeeaa;">_Result</span>, <span style="color: #eeeeaa;">Trace</span>) -&gt;
+         <span style="color: #888a85;">%% </span><span style="color: #888a85;">1. Check that node number 1 stopped processing after first</span>
+         <span style="color: #888a85;">%% </span><span style="color: #888a85;">crash:</span>
+         <span style="color: #eeeeaa;">LastSuccOffset</span> = <span style="color: #eeeeaa;">CrashOffset</span> - 1,
+         ?<span style="color: #8ae234;">assertEqual</span>( <span style="color: #8ae234; font-weight: bold;">lists</span>:<span style="color: #8ae234; font-weight: bold;">seq</span>(1, <span style="color: #eeeeaa;">LastSuccOffset</span>)
+                     , ?<span style="color: #8ae234;">projection</span>( offset
+                                  , ?<span style="color: #8ae234;">of_kind</span>(kflow_test_map_seen_message, <span style="color: #eeeeaa;">Trace</span>)
+                                  )
+                     ),
+         <span style="color: #888a85;">%% </span><span style="color: #888a85;">2. Check that nodes 2 flushed buffered messages:</span>
+         ?<span style="color: #8ae234;">assertMatch</span>( [#{offset := <span style="color: #eeeeaa;">LastSuccOffset</span>}]
+                     , ?<span style="color: #8ae234;">of_kind</span>(kflow_test_aggregate_out, <span style="color: #eeeeaa;">Trace</span>)
+                     )
+     <span style="color: #729fcf; font-weight: bold;">end</span>).
+</pre>
+</div>
+<div id="footnotes">
+<h2 class="footnotes">Footnotes: </h2>
+<div id="text-footnotes">
+
+<div class="footdef"><sup><a id="fn.1" class="footnum" href="#fnr.1">1</a></sup> <div class="footpara"><p class="footpara">
+An older post that explains the basics is found <a href="https://blog.erlang.moe/2019-10-11-hello-world.html">here</a>
+</p></div></div>
+
+
+</div>
+</div></div>
+<div id="postamble" class="status">
+<p class="date">Date: 2020-10-29</p>
+<p class="validation"></p>
+</div>
+</body>
+</html>
