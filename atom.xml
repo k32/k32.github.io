@@ -6,7 +6,41 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>fre, 16 apr 2021 12:47:37 +0200</lastBuildDate>
+<lastBuildDate>sön, 25 apr 2021 23:17:07 +0200</lastBuildDate>
+<item>
+  <title>Planning vs. prototyping</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+The process of software engineering has two aspects: creative and
+social. Neglecting the social aspect leads to products that nobody can
+understand, support or use. Neglecting the creative aspect leads to
+total waste of resources and products that never ship. In this post I
+propose a simple formula that helps to strike the right balance
+between the two.
+</p>
+
+ <p>
+Let \(T_i\) is time needed to write the code demonstrating the approach,
+\(T_r\) is time needed to rollback the code, if the approach does not
+work, and \(T_d\) is time needed to discuss whether the approach will
+work, then the following inequality must hold:
+</p>
+
+ <p>
+\[
+T_d \leq T_i + T_r
+\]
+</p>
+
+ <p>
+ <i>tagged: rant</i>
+</p>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2021-02-12-just-do-it.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2021-02-12-just-do-it.html</guid>
+  <pubDate>fre, 12 feb 2021 01:00:00 +0100</pubDate>
+</item>
 <item>
   <title>This messenger respects your privacy</title>
   <description><![CDATA[<div id="content">
@@ -98,6 +132,857 @@ until they die. Don't use them and download AcmeIM today!
 </div>]]></description>
   <link>https://blog.erlang.moe/2020-12-01-acme-messenger.html</link>
   <guid isPermaLink="false">https://blog.erlang.moe/2020-12-01-acme-messenger.html</guid>
+  <pubDate>tis, 01 dec 2020 01:00:00 +0100</pubDate>
+</item>
+<item>
+  <title>Introduction to Snabbkaffe</title>
+  <description><![CDATA[<div id="content">
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">1</span> Background and motivation</h2>
+ <div class="outline-text-2" id="text-1">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">1.1</span> What is snabbkaffe</h3>
+ <div class="outline-text-3" id="text-1-1">
+ <ul class="org-ul"> <li>Snabbkaffe is a library that allows to test concurrent and distributed systems</li>
+
+ <li>It does so by moving focus from  <i>states</i> to  <i>effects</i></li>
+
+ <li>Developers find bugs by looking at the logs, snabbkaffe does the same and automates the process</li>
+
+ <li>Advanced modes of testing: fault and scheduling injection</li>
+
+ <li>Efficiency: run test scenario once, verify multiple properties</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">1.2</span> Name</h3>
+ <div class="outline-text-3" id="text-1-2">
+ <ul class="org-ul"> <li> <code>Snabbkaffe</code> means ``instant coffee'' in Swedish</li>
+
+ <li>There is no hidden meaning, the name was chosen randomly</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">1.3</span> Nondeterminism</h3>
+ <div class="outline-text-3" id="text-1-3">
+</div>
+ <ol class="org-ol"> <li> <a id="org"></a>Definitions <br></br> <div class="outline-text-4" id="text-1-3-1">
+ <ul class="org-ul"> <li> <b>Deterministic</b> functions always produce the same output for the same input</li>
+
+ <li> <b>Nondeterministic</b> functions can produce different outputs for the same input</li>
+</ul></div>
+</li>
+
+ <li> <a id="org"></a>Sources of nondeterminism <br></br> <div class="outline-text-4" id="text-1-3-2">
+ <ul class="org-ul"> <li>Process schedulings</li>
+
+ <li>Fault-tolerance (failovers)</li>
+
+ <li>Network (packet loss and reordering)</li>
+
+ <li>Load balancing, worker pools</li>
+</ul> <p>
+Nondeterminism is an inherent property of concurrent systems
+</p>
+</div>
+</li>
+</ol></div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">1.4</span> Why change the paradigm of testing?</h3>
+ <div class="outline-text-3" id="text-1-4">
+</div>
+ <ol class="org-ol"> <li> <a id="org"></a>Difficulty levels <br></br> <div class="outline-text-4" id="text-1-4-1">
+ <ol class="org-ol"> <li>Easy: Pure functions</li>
+
+ <li>Normal: Stateful systems</li>
+
+ <li>Hard: Nondeterministic systems</li>
+
+ <li> <b>Nightmare:</b> Nondeterministic fault-tolerant distributed systems</li>
+</ol></div>
+</li>
+
+ <li> <a id="org"></a>Traditional approach <br></br> <div class="outline-text-4" id="text-1-4-2">
+ <ul class="org-ul"> <li>Traditional approach is sufficient for testing pure functions.
+There are a variety of excellent tools for this, like PropER</li>
+
+ <li>It can do pretty well with stateful systems (stateful PropER)</li>
+
+ <li> <b>Where it starts to crack:</b> typical Erlang application assembled together</li>
+</ul></div>
+</li>
+</ol></div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">1.5</span> Challenges of testing Erlang applications  <i>in situ</i></h3>
+ <div class="outline-text-3" id="text-1-5">
+ <p>
+Erlang partitions the state of the system between processes
+</p>
+
+ <ul class="org-ul"> <li>It eliminates some concurrency bugs and isolates failures</li>
+
+ <li>But it makes the system harder to analyze</li>
+
+ <li>More often than not it's impossible to inspect state of the process ( <code>sys:get_state</code>)</li>
+
+ <li>Often it's useless</li>
+
+ <li>Tests that rely on the state usually need to wait for the system to stabilize, it can be slow, and they can't analyze the system in motion</li>
+
+ <li>Asynchronous data processing patterns (e.g. job queues) are incredibly annoying to test using traditional methods</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">1.6</span> Possible solution to this problem?</h3>
+ <div class="outline-text-3" id="text-1-6">
+ <p>
+Move away from states and embrace events and their temporal relationships
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">2</span> Instrumenting the code</h2>
+ <div class="outline-text-2" id="text-2">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">2.1</span> Tracing macros</h3>
+ <div class="outline-text-3" id="text-2-1">
+ <ol class="org-ol"> <li>Replace your regular logs with structured logs (the industry is moving towards structured logs anyway)</li>
+
+ <li>Include  <code>"snabbkaffe/include/trace.hrl"</code> header to your module</li>
+
+ <li>Use  <code>?tp</code> or  <code>?tp_span</code> macros for logging ( <code>tp</code> stands for Trace Point)
+
+ <ul class="org-ul"> <li>In the release build these macros will become regular  <code>logger</code> messages</li>
+
+ <li>In the test build these macros will emit trace events</li>
+</ul></li>
+</ol></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">2.2</span> Examples</h3>
+ <div class="outline-text-3" id="text-2-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Disappears in the release build:</span>
+? <span style="color: #8ae234;">tp</span>(rlog_replica_import_trans,
+    #{ seqno       =>  <span style="color: #eeeeaa;">SeqNo</span>
+     , txid        =>  <span style="color: #eeeeaa;">TXID</span>
+     , transaction =>  <span style="color: #eeeeaa;">Transaction</span>
+     })
+</pre>
+</div>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Becomes a notice message</span>
+? <span style="color: #8ae234;">tp</span>(notice,  <span style="color: #ad7fa8; font-style: italic;">"Remote process died"</span>,
+    #{ reason   =>  <span style="color: #eeeeaa;">Reason</span>
+     , my_state =>  <span style="color: #eeeeaa;">State</span>
+     })
+</pre>
+</div>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Emits two events:</span>
+? <span style="color: #8ae234;">tp_span</span>(trans_write, #{record =>  <span style="color: #eeeeaa;">Record</span>, txid =>  <span style="color: #8ae234; font-weight: bold;">get_txid</span>()},
+          <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>( <span style="color: #eeeeaa;">Record</span>)).
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">2.3</span> Distributed tracing</h3>
+ <div class="outline-text-3" id="text-2-3">
+ <p>
+Forward traces from the remote node:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">on the ct_master:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">forward_trace</span>( <span style="color: #eeeeaa;">Node</span>)
+</pre>
+</div>
+
+ <p>
+All features (incl. fault and scheduling injections) will work
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">2.4</span> Why not using erlang tracing?</h3>
+ <div class="outline-text-3" id="text-2-4">
+ <p>
+An often asked question: why not using  <code>dbg:tracer</code> or the like?
+</p>
+
+ <p>
+It was a conscious design choice:
+</p>
+
+ <ul class="org-ul"> <li>Traces obtained this way are tightly bound to the structure of the code. Refactoring the code or adding a new function argument would break the tests</li>
+
+ <li>Debug traces are excessive, it would be hard to see the forest through the trees</li>
+
+ <li>Log messages are typically placed in ``interesting'' places
+ <ul class="org-ul"> <li>Interesting for humans = interesting for tests</li>
+</ul></li>
+</ul></div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">3</span> Testing</h2>
+ <div class="outline-text-2" id="text-3">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">3.1</span> Stages of the test</h3>
+ <div class="outline-text-3" id="text-3-1">
+ <p>
+Every testcase is split in two stages:
+</p>
+</div>
+
+ <ol class="org-ol"> <li> <a id="org"></a>Run stage <br></br> <div class="outline-text-4" id="text-3-1-1">
+ <p>
+where the program runs and emits the event trace
+</p>
+</div>
+</li>
+
+ <li> <a id="org"></a>Check stage <br></br> <div class="outline-text-4" id="text-3-1-2">
+ <p>
+where the trace is collected as a list of Erlang maps and validated against the spec(s)
+</p>
+</div>
+</li>
+</ol></div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">3.2</span> check_trace macro</h3>
+ <div class="outline-text-3" id="text-3-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">my_test</span>() ->
+  ? <span style="color: #8ae234;">check_trace</span>( <span style="color: #729fcf; font-weight: bold;">begin</span>
+                  <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Run stage:</span>
+                  <span style="color: #8ae234; font-weight: bold;">launch_system</span>(),
+                  <span style="color: #8ae234; font-weight: bold;">do_stuff</span>(),
+                  <span style="color: #8ae234; font-weight: bold;">wait_for_completion</span>(),
+                  <span style="color: #8ae234; font-weight: bold;">get_result</span>()
+                <span style="color: #729fcf; font-weight: bold;">end</span>,
+                <span style="color: #729fcf; font-weight: bold;">fun</span>( <span style="color: #eeeeaa;">Result</span>,  <span style="color: #eeeeaa;">Trace</span>) ->
+                   <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Check stage:</span>
+                  ? <span style="color: #8ae234;">assertMatch</span>(ok,  <span style="color: #eeeeaa;">Result</span>),
+                   <span style="color: #8ae234; font-weight: bold;">check_history</span>( <span style="color: #eeeeaa;">Trace</span>),
+                   <span style="color: #8ae234; font-weight: bold;">check_history2</span>( <span style="color: #eeeeaa;">Trace</span>),
+                  ...
+                <span style="color: #729fcf; font-weight: bold;">end</span>).
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">3.3</span> Waiting for events</h3>
+ <div class="outline-text-3" id="text-3-3">
+ <p>
+It is possible to block run stage until a certain event occurs:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">block_until</span>(#{ ? <span style="color: #8ae234;">snk_kind</span>  := message_acked
+              , message_id :=  <span style="color: #eeeeaa;">Id</span>
+              }  <span style="color: #729fcf; font-weight: bold;">when</span>  <span style="color: #eeeeaa;">Id</span> > 42,
+              <span style="color: #eeeeaa;">Timeout</span>,  <span style="color: #eeeeaa;">BackInTime</span>)
+</pre>
+</div>
+
+ <p>
+This macro will return immediately as soon as the event happens, so it's more efficient and less prone to flakiness than a sleep.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">3.4</span> Starting an asynchronous action</h3>
+ <div class="outline-text-3" id="text-3-4">
+ <p>
+ <code>?block_until</code> is fine, but it requires timeout tuning.
+What if the same event happened in the past?
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">wait_async_action</span>(  <span style="color: #8ae234; font-weight: bold;">send_async_request</span>( <span style="color: #eeeeaa;">Req</span>)
+                  , #{ ? <span style="color: #8ae234;">snk_kind</span> := request_handled
+                     , request :=  <span style="color: #eeeeaa;">Req</span>
+                     }
+                 [,  <span style="color: #eeeeaa;">Timeout</span>]
+                  )
+</pre>
+</div>
+
+ <p>
+This macro doesn't have to look into the past.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">3.5</span> Integrating with PropER</h3>
+ <div class="outline-text-3" id="text-3-5">
+ <p>
+It's not a problem to combine stateless PropER tests with snabbkaffe.
+ <code>?check_trace</code> macro can be used inside proper's  <code>?FORALL</code> macro.
+</p>
+
+ <p>
+Snabbkaffe provides some convenience macros that simplify trace-property-based testing:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">trace_prop_test</span>( <span style="color: #eeeeaa;">Config</span>) ->
+   <span style="color: #eeeeaa;">Prop</span> = ? <span style="color: #8ae234;">forall_trace</span>(
+             <span style="color: #eeeeaa;">X</span>,  <span style="color: #729fcf;">list</span>(),
+             <span style="color: #729fcf; font-weight: bold;">begin</span>
+               <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Run stage:</span>
+               <span style="color: #8ae234; font-weight: bold;">do_stuff</span>( <span style="color: #eeeeaa;">X</span>)
+             <span style="color: #729fcf; font-weight: bold;">end</span>,
+             <span style="color: #729fcf; font-weight: bold;">fun</span>( <span style="color: #eeeeaa;">Result</span>,  <span style="color: #eeeeaa;">Trace</span>) ->
+                 <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Check stage</span>
+                true
+             <span style="color: #729fcf; font-weight: bold;">end</span>),
+  ? <span style="color: #8ae234;">run_prop</span>( <span style="color: #eeeeaa;">Config</span>,  <span style="color: #eeeeaa;">Prop</span>).
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">3.6</span> Misc. macros</h3>
+ <div class="outline-text-3" id="text-3-6">
+ <p>
+There are a few macros that are not directly related to trace-based testing, but often needed:
+</p>
+</div>
+
+ <ol class="org-ol"> <li> <a id="org"></a>?panic <br></br> <div class="outline-text-4" id="text-3-6-1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">panic</span>( <span style="color: #ad7fa8; font-style: italic;">"Unexpected result"</span>, #{result =>  <span style="color: #eeeeaa;">A</span>})
+</pre>
+</div>
+
+ <p>
+Throw an error
+</p>
+</div>
+</li>
+
+ <li> <a id="org"></a>?retry <br></br> <div class="outline-text-4" id="text-3-6-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">retry</span>( <span style="color: #eeeeaa;">_RetryPeriod</span> = 100,  <span style="color: #eeeeaa;">_MaxRetries</span> = 10,
+        <span style="color: #8ae234; font-weight: bold;">some_action_that_can_fail</span>())
+</pre>
+</div>
+
+ <p>
+Run some code periodically until it succeeds (use as the last resort, when  <code>?block_until</code> won't work)
+</p>
+</div>
+</li>
+
+ <li> <a id="org"></a>?give_or_take <br></br> <div class="outline-text-4" id="text-3-6-3">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">give_or_take</span>( <span style="color: #eeeeaa;">_Expected</span> = 20,  <span style="color: #eeeeaa;">_Deviation</span> = 2,  <span style="color: #eeeeaa;">Value</span>)
+</pre>
+</div>
+
+ <p>
+Check that an integer value is within range
+</p>
+</div>
+</li>
+</ol></div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">4</span> Basic functions for working with traces</h2>
+ <div class="outline-text-2" id="text-4">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">4.1</span> Structure of the trace event</h3>
+ <div class="outline-text-3" id="text-4-1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[#{ ? <span style="color: #8ae234;">snk_kind</span> => foo
+  , ? <span style="color: #8ae234;">snk_meta</span> => #{ domain => [foo, bar]
+                  , node =>  <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>
+                  , time => <monotonic time>
+                  , pid => <0.343.0>
+                  , group_leader => <0.67.0>
+                  , custom_field1 => baz
+                  , custom_field2 => foobar
+                  }
+  , field1 => 42
+  , field2 => foo
+  },
+  ...
+]
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">4.2</span> Structure of the span trace</h3>
+ <div class="outline-text-3" id="text-4-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[#{ ? <span style="color: #8ae234;">snk_kind</span> => foo
+  , ? <span style="color: #8ae234;">snk_meta</span> => #{ ... }
+  , ? <span style="color: #8ae234;">snk_span</span> => start
+  , field1 => 42
+  , field2 => foo
+  },
+ #{ ? <span style="color: #8ae234;">snk_kind</span> => foo
+  , ? <span style="color: #8ae234;">snk_meta</span> => #{ ... }
+  , ? <span style="color: #8ae234;">snk_span</span> => {complete,  <span style="color: #eeeeaa;">ReturnValue</span>}
+  , field1 => 42
+  , field2 => foo
+  }
+]
+</pre>
+</div>
+</div>
+</div>
+
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">4.3</span> Filtering the trace</h3>
+ <div class="outline-text-3" id="text-4-3">
+</div>
+ <ol class="org-ol"> <li> <a id="org"></a>?of_kind macro <br></br> <div class="outline-text-4" id="text-4-3-1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">FooEvents = ? <span style="color: #8ae234;">of_kind</span>(foo,  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">FooOrBarEvents = ? <span style="color: #8ae234;">of_kind</span>([foo, bar],  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>?of_domain macro <br></br> <div class="outline-text-4" id="text-4-3-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang">EMQXEvents = ? <span style="color: #8ae234;">of_domain</span>([emqx| <span style="color: #eeeeaa;">_</span>],  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>?of_node macro <br></br> <div class="outline-text-4" id="text-4-3-3">
+ <div class="org-src-container">
+ <pre class="src src-erlang">NodeFooEvents = ? <span style="color: #8ae234;">of_node</span>( <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>More complex filtering <br></br> <div class="outline-text-4" id="text-4-3-4">
+ <p>
+Of course,  <code>lists:filter</code> and list comprehensions work too
+</p>
+</div>
+</li>
+</ol></div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">4.4</span> Extracting fields</h3>
+ <div class="outline-text-3" id="text-4-4">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[1, 2] = ? <span style="color: #8ae234;">projection</span>(id, ? <span style="color: #8ae234;">of_kind</span>(handle_message,  <span style="color: #eeeeaa;">Trace</span>))
+</pre>
+</div>
+ <div class="org-src-container">
+ <pre class="src src-erlang">[{1,  <span style="color: #ad7fa8; font-style: italic;">"hello"</span>}, {2,  <span style="color: #ad7fa8; font-style: italic;">"world"</span>}] =
+     ? <span style="color: #8ae234;">projection</span>( [id, message]
+                , ? <span style="color: #8ae234;">of_kind</span>(handle_message,  <span style="color: #eeeeaa;">Trace</span>)
+                )
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">5</span> Event correlations</h2>
+ <div class="outline-text-2" id="text-5">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">5.1</span> ?strict_causality macro</h3>
+ <div class="outline-text-3" id="text-5-1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">strict_causality</span>( #{? <span style="color: #8ae234;">snk_kind</span> := msg_received, id :=  <span style="color: #eeeeaa;">_Id</span>}
+                 , #{? <span style="color: #8ae234;">snk_kind</span> := msg_processed, id :=  <span style="color: #eeeeaa;">_Id</span>}
+                 ,  <span style="color: #eeeeaa;">Trace</span>
+                 )
+</pre>
+</div>
+
+ <p>
+Return value:
+</p>
+
+ <ul class="org-ul"> <li> <code>true</code> if some matching events were found</li>
+ <li> <code>false</code> if no events were found</li>
+ <li>exception if causality is violated</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">5.2</span> ?strict_causality with guard</h3>
+ <div class="outline-text-3" id="text-5-2">
+ <p>
+Suppose we're testing a "base64 server":
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">strict_causality</span>( #{req :=  <span style="color: #eeeeaa;">_Req</span>}
+                 , #{resp :=  <span style="color: #eeeeaa;">_Resp</span>}
+                 ,  <span style="color: #eeeeaa;">_Resp</span> =:=  <span style="color: #8ae234; font-weight: bold;">base64</span>: <span style="color: #8ae234; font-weight: bold;">encode</span>( <span style="color: #eeeeaa;">_Req</span>)
+                 ,  <span style="color: #eeeeaa;">Trace</span>
+                 )
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">5.3</span> ?causality macro</h3>
+ <div class="outline-text-3" id="text-5-3">
+ <p>
+Overall, it's the same as  <code>?strict_causality</code>, except it doesn't require each ``cause'' to have an ``effect''
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">causality</span>( #{? <span style="color: #8ae234;">snk_kind</span> := msg_received, id :=  <span style="color: #eeeeaa;">_Id</span>}
+          , #{? <span style="color: #8ae234;">snk_kind</span> := msg_processed, id :=  <span style="color: #eeeeaa;">_Id</span>}
+         [,  <span style="color: #eeeeaa;">Guard</span>]
+          ,  <span style="color: #eeeeaa;">Trace</span>
+          )
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">5.4</span> Pitfalls</h3>
+ <div class="outline-text-3" id="text-5-4">
+ <p>
+There is a potential problem with ``causality'' macros:
+</p>
+
+ <ol class="org-ol"> <li>Format of the event is changed in the code</li>
+ <li>Match expressions in causality stop matching the events</li>
+ <li>Tests still pass, even though they didn't find any events</li>
+</ol> <p>
+ <b>Solution:</b>
+</p>
+
+ <p>
+Always wrap  <code>?causality</code> and  <code>?strict_causality</code> in  <code>?assert</code>, unless there are legit situations when no events can be produced in the test
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">5.5</span> ?find_pairs macro</h3>
+ <div class="outline-text-3" id="text-5-5">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">find_pairs</span>( <span style="color: #eeeeaa;">Strict</span>,  <span style="color: #eeeeaa;">MatchCause</span>,  <span style="color: #eeeeaa;">MatchEffect</span> [,  <span style="color: #eeeeaa;">Guard</span>] ,  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+
+ <ol class="org-ol"> <li>It returns a list of  <code>{pair, Cause, Effect}</code> or  <code>{singleton, Cause}</code></li>
+
+ <li>When  <code>Strict</code> is  <code>true</code> this macro also checks that effects don't occur before causes (much like  <code>?causality</code>)</li>
+</ol></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">5.6</span> Splitting traces</h3>
+ <div class="outline-text-3" id="text-5-6">
+ <p>
+Often it is useful to split traces to parts before and after some event (for example, restart)
+</p>
+
+ <p>
+There are a variety of macros for this:
+</p>
+</div>
+
+ <ol class="org-ol"> <li> <a id="org"></a>split_at <br></br> <div class="outline-text-4" id="text-5-6-1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">split_trace_at</span>(bar, [foo, bar, baz, bar]).
+{[foo], [bar, baz, bar]}.
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>splitr <br></br> <div class="outline-text-4" id="text-5-6-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">splitr_trace</span>(foo, [1, 2, foo, 1, 2, foo])
+[[1, 2], [foo, 1, 2], [foo]].
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>splitl <br></br> <div class="outline-text-4" id="text-5-6-3">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">splitl_trace</span>(foo, [1, 2, foo, 1, 2, foo]).
+[[1, 2, foo], [1, 2, foo]].
+</pre>
+</div>
+</div>
+</li>
+</ol></div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">6</span> Nemesis</h2>
+ <div class="outline-text-2" id="text-6">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">6.1</span> Are your supervisors tested?</h3>
+ <div class="outline-text-3" id="text-6-1">
+ <ul class="org-ul"> <li>Taking fault-tolerance seriously is one of the selling points of Erlang.
+Organizing processes in supervisor trees is used widely, but not often tested</li>
+
+ <li>Tuning supervisor trees is an art</li>
+
+ <li>Snabbkaffe wants to turn it into a chore</li>
+
+ <li>It does so by injecting deliberate faults into the system</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">6.2</span> Fault injection</h3>
+ <div class="outline-text-3" id="text-6-2">
+ <p>
+Any tracepoint can be used to inject errors into the system
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>( #{? <span style="color: #8ae234;">snk_meta</span> := #{domain := [ekka, rlog| <span style="color: #eeeeaa;">_</span>]}}
+             ,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1)
+             )
+
+</pre>
+</div>
+
+ <ul class="org-ul"> <li>First argument: event matching expression</li>
+ <li>Second argument: fault scenario</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">6.3</span> Fault scenarios</h3>
+ <div class="outline-text-3" id="text-6-3">
+</div>
+ <ol class="org-ol"> <li> <a id="org"></a>Always crash: <br></br> <div class="outline-text-4" id="text-6-3-1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">always_crash</span>())
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>Crash  <code>N</code> times: <br></br> <div class="outline-text-4" id="text-6-3-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">recover_after</span>(10))
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>Crash randomly with probability  <code>P</code>: <br></br> <div class="outline-text-4" id="text-6-3-3">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1))
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org"></a>Crash periodically: <br></br> <div class="outline-text-4" id="text-6-3-4">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">periodic_crash</span>(
+   <span style="color: #eeeeaa;">_Period</span> = 10,  <span style="color: #eeeeaa;">_DutyCycle</span> = 0.5,  <span style="color: #eeeeaa;">_Phase</span> =  <span style="color: #8ae234; font-weight: bold;">math</span>: <span style="color: #8ae234; font-weight: bold;">pi</span>())
+</pre>
+</div>
+</div>
+</li>
+</ol></div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">6.4</span> Manipulating process schedulings</h3>
+ <div class="outline-text-3" id="text-6-4">
+ <ul class="org-ul"> <li>Sometimes it is necessary to test a certain process scheduling</li>
+
+ <li>Imagine working on a bugfix using TDD-style</li>
+
+ <li>For example, normally effect  <code>foo</code> occurs after effect  <code>bar</code>, and everything works.
+But in rare cases the opposite happens, and the bug occurs</li>
+
+ <li>Snabbkaffe can manipulate process schedulings to some extend:</li>
+</ul> <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">run stage...</span>
+? <span style="color: #8ae234;">force_ordering</span>(#{? <span style="color: #8ae234;">snk_kind</span> := bar}, #{? <span style="color: #8ae234;">snk_kind</span> := foo})
+</pre>
+</div>
+
+ <p>
+(It also supports guards)
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">7</span> Using snabbkaffe as a benchmark library</h2>
+ <div class="outline-text-2" id="text-7">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">7.1</span> Disclaimer</h3>
+ <div class="outline-text-3" id="text-7-1">
+ <ul class="org-ul"> <li>This usecase is a secondary, and quite rudimentary. Don't expect much</li>
+ <li>It lacks many features of proper benchmarking libraries, such as
+ <ul class="org-ul"> <li>Warmup</li>
+ <li>Advanced statistical analysis, e.g. outlier detection</li>
+</ul></li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">7.2</span> Reporting metrics</h3>
+ <div class="outline-text-3" id="text-7-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report a single scalar datapoint:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stat</span>(scalar_metric_name,  <span style="color: #eeeeaa;">Value</span>),
+ <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report a single datapoint with X coord:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stat</span>(metric_name,  <span style="color: #eeeeaa;">X</span>,  <span style="color: #eeeeaa;">Value</span>),
+ <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report multiple scalar datapoints:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name, [ <span style="color: #eeeeaa;">Val1</span>,  <span style="color: #eeeeaa;">Val2</span>, ...]),
+ <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report multiple datapoints with X coord:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name,  <span style="color: #eeeeaa;">X</span>, [ <span style="color: #eeeeaa;">Val1</span>,  <span style="color: #eeeeaa;">Val2</span>, ...])
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">7.3</span> Using spans to analyze performance</h3>
+ <div class="outline-text-3" id="text-7-3">
+ <p>
+ <code>push_stats</code> function also works together with  <code>?find_pairs</code> macro:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang">Pairs = ? <span style="color: #8ae234;">find_pairs</span>( #{ ? <span style="color: #8ae234;">snk_span</span> := start
+                      , ? <span style="color: #8ae234;">snk_kind</span> := foo
+                      , pid       :=  <span style="color: #eeeeaa;">_Pid</span>
+                      }
+                   , #{ ? <span style="color: #8ae234;">snk_span</span> := {complete,  <span style="color: #eeeeaa;">_</span>}
+                      , ? <span style="color: #8ae234;">snk_kind</span> := foo
+                      , pid       :=  <span style="color: #eeeeaa;">_Pid</span>
+                      }
+                   ),
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name, [ <span style="color: #eeeeaa;">X</span>,]  <span style="color: #eeeeaa;">Pairs</span>)
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">7.4</span> Analyzing the results</h3>
+ <div class="outline-text-3" id="text-7-4">
+ <p>
+Use the following function in the end of check stage:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">analyze_statistics</span>()
+</pre>
+</div>
+
+ <p>
+It will print the results in the console:
+</p>
+
+ <pre class="example" id="org">
+Mean scalar_metric_name: 10.0
+
+Statisitics of metric_name
+100.479087 ^                                       *
+           |                         *
+           |                   *
+           |
+           |            *
+           |      *
+         0 +---------------------------------------->
+           0                                     1100
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">8</span> Conclusion</h2>
+ <div class="outline-text-2" id="text-8">
+</div>
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">8.1</span> Useful links</h3>
+ <div class="outline-text-3" id="text-8-1">
+ <p>
+ <a href="https://github.com/kafka4beam/snabbkaffe">https://github.com/kafka4beam/snabbkaffe</a>
+</p>
+
+ <p>
+The library is being actively developed.
+</p>
+
+ <p>
+Suggestions, bug reports and patches are welcome!
+</p>
+</div>
+
+ <ol class="org-ol"> <li> <a id="org"></a>Snabbkaffe in action <br></br> <div class="outline-text-4" id="text-8-1-1">
+ <p>
+Feel free to use as an example (clickable links):
+</p>
+
+ <ul class="org-ul"> <li> <a href="https://github.com/kafka4beam/brod/blob/master/test/brod_group_subscriber_SUITE.erl">brod</a></li>
+
+ <li> <a href="https://github.com/kafka4beam/kflow/tree/master/test">kflow</a></li>
+
+ <li> <a href="https://github.com/k32/ekka/blob/master/test/ekka_mnesia_SUITE.erl">ekka</a></li>
+
+ <li> <a href="https://github.com/emqx/emqx/">EMQ X</a></li>
+</ul></div>
+</li>
+</ol></div>
+</div>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2021-04-25-snabbkaffe-slides.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2021-04-25-snabbkaffe-slides.html</guid>
   <pubDate>tis, 01 dec 2020 01:00:00 +0100</pubDate>
 </item>
 <item>

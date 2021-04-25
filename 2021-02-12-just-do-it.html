@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planning vs. prototyping</title>
+<meta name="generator" content="Org mode" />
+<link rel="stylesheet" type="text/css" href="default.css"/>
+<link href="atom.xml" type="application/atom+xml" rel="alternate" title="k32's notebook"/>
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        displayAlign: "center",
+        displayIndent: "0em",
+
+        "HTML-CSS": { scale: 100,
+                        linebreaks: { automatic: "false" },
+                        webFont: "TeX"
+                       },
+        SVG: {scale: 100,
+              linebreaks: { automatic: "false" },
+              font: "TeX"},
+        NativeMML: {scale: 100},
+        TeX: { equationNumbers: {autoNumber: "AMS"},
+               MultLineWidth: "85%",
+               TagSide: "right",
+               TagIndent: ".8em"
+             }
+});
+</script>
+<script type="text/javascript"
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS_HTML"></script>
+</head>
+<body>
+<div id="org-div-home-and-up">
+ <a accesskey="h" href=""> UP </a>
+ |
+ <a accesskey="H" href="index.html"> HOME </a>
+</div><div id="content">
+<h1 class="title">Planning vs. prototyping</h1>
+<p>
+The process of software engineering has two aspects: creative and
+social. Neglecting the social aspect leads to products that nobody can
+understand, support or use. Neglecting the creative aspect leads to
+total waste of resources and products that never ship. In this post I
+propose a simple formula that helps to strike the right balance
+between the two.
+</p>
+
+<p>
+Let \(T_i\) is time needed to write the code demonstrating the approach,
+\(T_r\) is time needed to rollback the code, if the approach does not
+work, and \(T_d\) is time needed to discuss whether the approach will
+work, then the following inequality must hold:
+</p>
+
+<p>
+\[
+T_d \leq T_i + T_r
+\]
+</p>
+
+<p>
+<i>tagged: rant</i>
+</p>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2021-02-12</p>
+</div>
+</body>
+</html>
