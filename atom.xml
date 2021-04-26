@@ -6,7 +6,60 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>mån, 26 apr 2021 23:00:11 +0200</lastBuildDate>
+<lastBuildDate>tis, 27 apr 2021 00:00:47 +0200</lastBuildDate>
+<item>
+  <title>Mnesia internals</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+I have been studying Mnesia internals for my current job assignment,
+and I figured that I may start publishing my scattered notes. There is
+a lot of interesting stuff going on down there. I will update this
+post with more details.
+</p>
+
+ <p>
+Disclaimer: I am not an OTP dev, and not a mnesia dev, thus anything
+that will be posted here will be derived from reading (the poorly
+documented) code and my own experiments. So THE BLOG POST IS PROVIDED
+"AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, and so on.
+</p>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">1</span>  <span class="todo TODO">TODO</span> Transaction flow</h2>
+ <div class="outline-text-2" id="text-1">
+
+ <div id="org" class="figure">
+ <p> <img src="mnesia_simplified.png" alt="mnesia_simplified.png"></img></p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">2</span>  <span class="todo TODO">TODO</span> Scalability</h2>
+ <div class="outline-text-2" id="text-2">
+ <p>
+As should be evident from the above diagram, transaction latency is
+expected to grow when the number of nodes in the cluster
+grows. Indeed, this effect was observed in the test with the help of
+ <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
+</p>
+
+ <p>
+Graph of Mnesia vs. "the new thing" prototype we're working on:
+</p>
+
+
+ <div id="org" class="figure">
+ <p> <img src="rlog_comparison.png" alt="rlog_comparison.png"></img></p>
+</div>
+</div>
+</div>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2021-04-26-mnesia.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2021-04-26-mnesia.html</guid>
+  <pubDate>mån, 26 apr 2021 02:00:00 +0200</pubDate>
+</item>
 <item>
   <title>Planning vs. prototyping</title>
   <description><![CDATA[<div id="content">
@@ -137,6 +190,10 @@ until they die. Don't use them and download AcmeIM today!
 <item>
   <title>Introduction to Snabbkaffe</title>
   <description><![CDATA[<div id="content">
+
+ <p>
+This is an HTML version of snabbkaffe presentation slides.
+</p>
 
  <div id="outline-container-org" class="outline-2">
  <h2 id="org"> <span class="section-number-2">1</span> Background and motivation</h2>
