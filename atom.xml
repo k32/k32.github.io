@@ -6,7 +6,1798 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>lör, 15 maj 2021 17:54:28 +0200</lastBuildDate>
+<lastBuildDate>lör, 15 maj 2021 22:57:53 +0200</lastBuildDate>
+<item>
+  <title>Mnesia internals</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+I've been studying Mnesia internals lately, and I figured I may start publishing my scattered notes.
+I will keep updating this post with more details.
+</p>
+
+ <p>
+Disclaimer: I am not an OTP dev, and not a mnesia dev.
+Anything that will be posted here will be derived from reading the code.
+</p>
+
+ <div id="outline-container-org8236502" class="outline-2">
+ <h2 id="org8236502">Transaction</h2>
+ <div class="outline-text-2" id="text-org8236502">
+ <p>
+Transaction fun runs in the same process that calls  <code>mnesia:transaction</code> function.
+Most of the commit coordination work is also done in the caller process.
+This helps mnesia scale.
+</p>
+
+
+ <div id="org85fb14e" class="figure">
+ <p> <object type="image/svg+xml" data="mnesia_trans.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgce23908" class="outline-4">
+ <h4 id="orgce23908">What's inside mnesia_activity_state?</h4>
+ <div class="outline-text-4" id="text-orgce23908">
+ <p>
+ <code>mnesia_activity_state</code> is a process dictionary variable in the transaction process.
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({bar, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
+....
+
+{mnesia,
+ # <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 13, pid = <0.125.0>},
+ # <span style="color: #8ae234; font-weight: bold;">tidstore</span>{store = #Ref<0.3426409509.1642725377.222071>,
+           up_stores = [],
+           level = 1
+           }}
+</pre>
+</div>
+
+ <p>
+Counter is the Lamport clock (kept by  <code>mnesia_tm</code> process)  <i>at the beginning</i> of the transaction.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgdcfa492" class="outline-4">
+ <h4 id="orgdcfa492">What's inside the tidstore table?</h4>
+ <div class="outline-text-4" id="text-orgdcfa492">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({bar, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
+....
+
+
+[{{bar,1},{bar,1,2},write},
+ {{foo,3},{foo,3,3}, write},
+ {{locks,foo,3}, write},
+ {{locks,bar,1}, write},
+ {nodes,  <span style="color: #ad7fa8; font-style: italic;">'foo@me-emq'</span>},
+ {nodes,  <span style="color: #ad7fa8; font-style: italic;">'bar@me-emq'</span>}]
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orgb0cbda9" class="outline-2">
+ <h2 id="orgb0cbda9"> <span class="todo TODO">TODO</span> Commit process in detail</h2>
+ <div class="outline-text-2" id="text-orgb0cbda9">
+ <p>
+Commit procedure also mostly happens in the caller process.
+This process acts as the coordinator.
+</p>
+
+
+ <div id="org255082a" class="figure">
+ <p> <object type="image/svg+xml" data="mnesia_subscr.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgfa152d4" class="outline-3">
+ <h3 id="orgfa152d4">Arrange</h3>
+ <div class="outline-text-3" id="text-orgfa152d4">
+ <p>
+Arrange function is pretty convoluted.
+Thankfully, it only uses the local data from the transaction store and the schema.
+It creates a tuple of the following type:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
+....
+
+{2,
+ # <span style="color: #8ae234; font-weight: bold;">prep</span>{protocol = sym_trans,
+       records = [# <span style="color: #8ae234; font-weight: bold;">commit</span>{node =  <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,
+                          decision = presume_commit,
+                          ram_copies = [{{foo,1},{foo,1,2},write},
+                                        {{foo,3},{foo,3,3},write}],
+                          disc_copies = [],disc_only_copies = [],ext = [],
+                          schema_ops = []},
+                  # <span style="color: #8ae234; font-weight: bold;">commit</span>{node =  <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,decision = presume_commit,
+                          ram_copies = [{{foo,1},{foo,1,2},write},
+                                        {{foo,3},{foo,3,3},write}],
+                          disc_copies = [],disc_only_copies = [],ext = [],
+                          schema_ops = []}],
+       prev_tab = foo,
+       prev_types = [{ <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,ram_copies},
+                     { <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,ram_copies}],
+       prev_snmp = [],
+       types = [{ <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,ram_copies},
+                { <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,ram_copies}],
+       majority = [],
+       sync = false}}
+</pre>
+</div>
+
+ <p>
+The first element is the number of write/delete ops in the transaction.
+This number is used to determine whether the transaction is r/o or r/w.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org6bcba34" class="outline-3">
+ <h3 id="org6bcba34">What is stored in the mnesia_tm's state?</h3>
+ <div class="outline-text-3" id="text-org6bcba34">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
+....
+
+# <span style="color: #8ae234; font-weight: bold;">state</span>{
+    coordinators = {0,nil},
+    participants =  <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Note: this field is a `</span> <span style="color: #729fcf; font-weight: bold;">gb_tree</span> <span style="color: #888a85;">'. So don't mind stuff in the outer tuple</span>
+        {1,
+         {# <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 32,pid = <11304.125.0>},
+          # <span style="color: #8ae234; font-weight: bold;">participant</span>{
+              tid = # <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 32,pid = <11304.125.0>},
+              pid = nopid,
+              commit =
+                  # <span style="color: #8ae234; font-weight: bold;">commit</span>{
+                      node =  <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,decision = presume_commit,
+                      ram_copies =
+                          [{{foo,1},{foo,1,2},write},{{foo,3},{foo,3,3},write}],
+                      disc_copies = [],disc_only_copies = [],ext = [],
+                      schema_ops = []},
+              disc_nodes = [],
+              ram_nodes = [ <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>, <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>],
+              protocol = sym_trans},
+          nil,nil}},
+    supervisor = <0.99.0>,blocked_tabs = [],dirty_queue = [],
+    fixed_tabs = []
+  }
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+ <div id="outline-container-org309a3a5" class="outline-2">
+ <h2 id="org309a3a5"> <span class="todo TODO">TODO</span> Transactional reads and writes</h2>
+ <div class="outline-text-2" id="text-org309a3a5">
+
+ <div id="orgacaf8af" class="figure">
+ <p> <object type="image/svg+xml" data="mnesia_simplified.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org82764aa" class="outline-2">
+ <h2 id="org82764aa"> <span class="todo TODO">TODO</span> Locker</h2>
+</div>
+
+ <div id="outline-container-org6eba189" class="outline-2">
+ <h2 id="org6eba189"> <span class="todo TODO">TODO</span> Schema</h2>
+</div>
+
+ <div id="outline-container-org4a4b66e" class="outline-2">
+ <h2 id="org4a4b66e"> <span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
+</div>
+
+ <div id="outline-container-org512fb1c" class="outline-2">
+ <h2 id="org512fb1c"> <span class="todo TODO">TODO</span> Scalability</h2>
+ <div class="outline-text-2" id="text-org512fb1c">
+ <p>
+As should be evident from the above diagram, transaction latency is expected to grow when the number of nodes in the cluster grows.
+Indeed, we observed this effect in the test with the help of  <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
+</p>
+</div>
+</div>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2021-04-26-mnesia.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2021-04-26-mnesia.html</guid>
+  <pubDate>mån, 26 apr 2021 02:00:00 +0200</pubDate>
+</item>
+<item>
+  <title>Planning vs. prototyping</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+The process of software engineering has two aspects: creative and
+social. Neglecting the social aspect leads to products that nobody can
+understand, support or use. Neglecting the creative aspect leads to
+total waste of resources and products that never ship. In this post I
+propose a simple formula that helps to strike the right balance
+between the two.
+</p>
+
+ <p>
+Let \(T_i\) is time needed to write the code demonstrating the approach,
+\(T_r\) is time needed to rollback the code, if the approach does not
+work, and \(T_d\) is time needed to discuss whether the approach will
+work, then the following inequality must hold:
+</p>
+
+ <p>
+\[
+T_d \leq T_i + T_r
+\]
+</p>
+
+ <p>
+ <i>tagged: rant</i>
+</p>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2021-02-12-just-do-it.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2021-02-12-just-do-it.html</guid>
+  <pubDate>fre, 12 feb 2021 01:00:00 +0100</pubDate>
+</item>
+<item>
+  <title>This messenger respects your privacy</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+Today I want to introduce Acme, a new instant messenger with E2E
+encryption and blast processing, that respects your privacy! It's not
+just for everyone, it is specifically targeted towards journalists who
+need to communicate with their sources, dissidents and other people
+ <del>whose metadata and social graph is especially interesting to
+honeypot</del> in need of strong privacy. Forget about obsolete
+decentralized stuff like GPG, and install AcmeIM from Grahma Play
+Store today.
+</p>
+
+ <div id="outline-container-org2494384" class="outline-2">
+ <h2 id="org2494384">Mobile number</h2>
+ <div class="outline-text-2" id="text-org2494384">
+ <p>
+Unlike obsolete encryption systems, we require mobile phone to
+register in our system. Your account is tied to your phone
+number. Never mind that in many countries around the world SIM-cards
+can be bought only after presenting a legal ID, and that mobile
+networks themselves have all-encompassing LI (Lawful Interception)
+interfaces by design. Also let's ignore the fact that mobile networks
+still heavily rely on SS7 protocol stack from the 70s, with the
+security model based on gentlemen's agreement. Some people claim that
+words "mobile network" and "secure" can't be used in the same
+sentence, but our security experts think it's very safe. Do you guys
+not have phones?
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgf3c5404" class="outline-2">
+ <h2 id="orgf3c5404">Centralized</h2>
+ <div class="outline-text-2" id="text-orgf3c5404">
+ <p>
+Our messenger uses client-server approach. (You can't run your own
+server, BTW.) This allows us to iterate faster than the obsolete
+p2p/federated networks. We promise not to store any metadata on our
+servers. Remember, end-to-end encryption = safe.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgca73f44" class="outline-2">
+ <h2 id="orgca73f44">Grahma play store</h2>
+ <div class="outline-text-2" id="text-orgca73f44">
+ <p>
+You can only download the client from the Grahma play store, so we can
+iterate faster. Grahma inc. is the champion of privacy and freedom, so
+we heavily rely on their APIs as well. It also helps us to update Acme
+client automatically. Suppose some so-called experts "audited" certain
+version of Acme. By doing that, they basically invited users to stick
+to the old version and hinder our ability to evolve, and put our users
+in risk. So we don't allow that.
+</p>
+
+ <p>
+P.S. Grahma and friends  <i>certainly</i> don't have the list of apps
+running on your phone, so it's safe to install AcmeIM without drawing
+any attention.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orge7d47c4" class="outline-2">
+ <h2 id="orge7d47c4">Obsolete technologies</h2>
+ <div class="outline-text-2" id="text-orge7d47c4">
+ <p>
+There are old cryptography tools that don't need centralized server,
+or mobile phone. They are modular enough, so the cyphertext can be
+embedded in DCT coefficients of cat pictures posted on @channel. In
+the current year this approach is a joke. It is extremely user
+unfriendly.
+</p>
+
+ <p>
+Security experts proclaim these old tools obsolete and can't wait
+until they die. Don't use them and download AcmeIM today!
+</p>
+
+ <p>
+ <i>tagged: humor</i>
+</p>
+</div>
+</div>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2020-12-01-acme-messenger.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2020-12-01-acme-messenger.html</guid>
+  <pubDate>tis, 01 dec 2020 01:00:00 +0100</pubDate>
+</item>
+<item>
+  <title>Introduction to Snabbkaffe</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+This is an HTML version of snabbkaffe presentation slides.
+</p>
+
+ <div id="outline-container-org3048e8a" class="outline-2">
+ <h2 id="org3048e8a">Background and motivation</h2>
+ <div class="outline-text-2" id="text-org3048e8a">
+</div>
+ <div id="outline-container-org59e7f55" class="outline-3">
+ <h3 id="org59e7f55">What is snabbkaffe</h3>
+ <div class="outline-text-3" id="text-org59e7f55">
+ <ul class="org-ul"> <li>Snabbkaffe is a library that allows to test concurrent and distributed systems</li>
+
+ <li>It does so by moving focus from  <i>states</i> to  <i>effects</i></li>
+
+ <li>Developers find bugs by looking at the logs, snabbkaffe does the same and automates the process</li>
+
+ <li>Advanced modes of testing: fault and scheduling injection</li>
+
+ <li>Efficiency: run test scenario once, verify multiple properties</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org5b10f73" class="outline-3">
+ <h3 id="org5b10f73">Name</h3>
+ <div class="outline-text-3" id="text-org5b10f73">
+ <ul class="org-ul"> <li> <code>Snabbkaffe</code> means ``instant coffee'' in Swedish</li>
+
+ <li>There is no hidden meaning, the name was chosen randomly</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org26fbe91" class="outline-3">
+ <h3 id="org26fbe91">Nondeterminism</h3>
+ <div class="outline-text-3" id="text-org26fbe91">
+</div>
+ <ul class="org-ul"> <li> <a id="org0a91fab"></a>Definitions <br></br> <div class="outline-text-4" id="text-org0a91fab">
+ <ul class="org-ul"> <li> <b>Deterministic</b> functions always produce the same output for the same input</li>
+
+ <li> <b>Nondeterministic</b> functions can produce different outputs for the same input</li>
+</ul></div>
+</li>
+
+ <li> <a id="org7e7ea1e"></a>Sources of nondeterminism <br></br> <div class="outline-text-4" id="text-org7e7ea1e">
+ <ul class="org-ul"> <li>Process schedulings</li>
+
+ <li>Fault-tolerance (failovers)</li>
+
+ <li>Network (packet loss and reordering)</li>
+
+ <li>Load balancing, worker pools</li>
+</ul> <p>
+Nondeterminism is an inherent property of concurrent systems
+</p>
+</div>
+</li>
+</ul></div>
+
+ <div id="outline-container-org50077a8" class="outline-3">
+ <h3 id="org50077a8">Why change the paradigm of testing?</h3>
+ <div class="outline-text-3" id="text-org50077a8">
+</div>
+ <ul class="org-ul"> <li> <a id="org186d154"></a>Difficulty levels <br></br> <div class="outline-text-4" id="text-org186d154">
+ <ol class="org-ol"> <li>Easy: Pure functions</li>
+
+ <li>Normal: Stateful systems</li>
+
+ <li>Hard: Nondeterministic systems</li>
+
+ <li> <b>Nightmare:</b> Nondeterministic fault-tolerant distributed systems</li>
+</ol></div>
+</li>
+
+ <li> <a id="org5bea329"></a>Traditional approach <br></br> <div class="outline-text-4" id="text-org5bea329">
+ <ul class="org-ul"> <li>Traditional approach is sufficient for testing pure functions.
+There are a variety of excellent tools for this, like PropER</li>
+
+ <li>It can do pretty well with stateful systems (stateful PropER)</li>
+
+ <li> <b>Where it starts to crack:</b> typical Erlang application assembled together</li>
+</ul></div>
+</li>
+</ul></div>
+
+ <div id="outline-container-orgad2606c" class="outline-3">
+ <h3 id="orgad2606c">Challenges of testing Erlang applications  <i>in situ</i></h3>
+ <div class="outline-text-3" id="text-orgad2606c">
+ <p>
+Erlang partitions the state of the system between processes
+</p>
+
+ <ul class="org-ul"> <li>It eliminates some concurrency bugs and isolates failures</li>
+
+ <li>But it makes the system harder to analyze</li>
+
+ <li>More often than not it's impossible to inspect state of the process ( <code>sys:get_state</code>)</li>
+
+ <li>Often it's useless</li>
+
+ <li>Tests that rely on the state usually need to wait for the system to stabilize, it can be slow, and they can't analyze the system in motion</li>
+
+ <li>Asynchronous data processing patterns (e.g. job queues) are incredibly annoying to test using traditional methods</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-orgbafbb55" class="outline-3">
+ <h3 id="orgbafbb55">Possible solution to this problem?</h3>
+ <div class="outline-text-3" id="text-orgbafbb55">
+ <p>
+Move away from states and embrace events and their temporal relationships
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orga76dfc2" class="outline-2">
+ <h2 id="orga76dfc2">Instrumenting the code</h2>
+ <div class="outline-text-2" id="text-orga76dfc2">
+</div>
+ <div id="outline-container-org64bded7" class="outline-3">
+ <h3 id="org64bded7">Tracing macros</h3>
+ <div class="outline-text-3" id="text-org64bded7">
+ <ol class="org-ol"> <li>Replace your regular logs with structured logs (the industry is moving towards structured logs anyway)</li>
+
+ <li>Include  <code>"snabbkaffe/include/trace.hrl"</code> header to your module</li>
+
+ <li>Use  <code>?tp</code> or  <code>?tp_span</code> macros for logging ( <code>tp</code> stands for Trace Point)
+
+ <ul class="org-ul"> <li>In the release build these macros will become regular  <code>logger</code> messages</li>
+
+ <li>In the test build these macros will emit trace events</li>
+</ul></li>
+</ol></div>
+</div>
+
+ <div id="outline-container-org51f4a9e" class="outline-3">
+ <h3 id="org51f4a9e">Examples</h3>
+ <div class="outline-text-3" id="text-org51f4a9e">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Disappears in the release build:</span>
+? <span style="color: #8ae234;">tp</span>(rlog_replica_import_trans,
+    #{ seqno       =>  <span style="color: #eeeeaa;">SeqNo</span>
+     , txid        =>  <span style="color: #eeeeaa;">TXID</span>
+     , transaction =>  <span style="color: #eeeeaa;">Transaction</span>
+     })
+</pre>
+</div>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Becomes a notice message</span>
+? <span style="color: #8ae234;">tp</span>(notice,  <span style="color: #ad7fa8; font-style: italic;">"Remote process died"</span>,
+    #{ reason   =>  <span style="color: #eeeeaa;">Reason</span>
+     , my_state =>  <span style="color: #eeeeaa;">State</span>
+     })
+</pre>
+</div>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Emits two events:</span>
+? <span style="color: #8ae234;">tp_span</span>(trans_write, #{record =>  <span style="color: #eeeeaa;">Record</span>, txid =>  <span style="color: #8ae234; font-weight: bold;">get_txid</span>()},
+          <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>( <span style="color: #eeeeaa;">Record</span>)).
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org0fdd127" class="outline-3">
+ <h3 id="org0fdd127">Distributed tracing</h3>
+ <div class="outline-text-3" id="text-org0fdd127">
+ <p>
+Forward traces from the remote node:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">on the ct_master:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">forward_trace</span>( <span style="color: #eeeeaa;">Node</span>)
+</pre>
+</div>
+
+ <p>
+All features (incl. fault and scheduling injections) will work
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgb4a4762" class="outline-3">
+ <h3 id="orgb4a4762">Why not using erlang tracing?</h3>
+ <div class="outline-text-3" id="text-orgb4a4762">
+ <p>
+An often asked question: why not using  <code>dbg:tracer</code> or the like?
+</p>
+
+ <p>
+It was a conscious design choice:
+</p>
+
+ <ul class="org-ul"> <li>Traces obtained this way are tightly bound to the structure of the code. Refactoring the code or adding a new function argument would break the tests</li>
+
+ <li>Debug traces are excessive, it would be hard to see the forest through the trees</li>
+
+ <li>Log messages are typically placed in ``interesting'' places
+ <ul class="org-ul"> <li>Interesting for humans = interesting for tests</li>
+</ul></li>
+</ul></div>
+</div>
+</div>
+
+ <div id="outline-container-orgddaeeab" class="outline-2">
+ <h2 id="orgddaeeab">Testing</h2>
+ <div class="outline-text-2" id="text-orgddaeeab">
+</div>
+ <div id="outline-container-org04f0038" class="outline-3">
+ <h3 id="org04f0038">Stages of the test</h3>
+ <div class="outline-text-3" id="text-org04f0038">
+ <p>
+Every testcase is split in two stages:
+</p>
+</div>
+
+ <ul class="org-ul"> <li> <a id="orgb0325b6"></a>Run stage <br></br> <div class="outline-text-4" id="text-orgb0325b6">
+ <p>
+where the program runs and emits the event trace
+</p>
+</div>
+</li>
+
+ <li> <a id="orgc2ebf1c"></a>Check stage <br></br> <div class="outline-text-4" id="text-orgc2ebf1c">
+ <p>
+where the trace is collected as a list of Erlang maps and validated against the spec(s)
+</p>
+</div>
+</li>
+</ul></div>
+
+ <div id="outline-container-org69a7dda" class="outline-3">
+ <h3 id="org69a7dda">check_trace macro</h3>
+ <div class="outline-text-3" id="text-org69a7dda">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">my_test</span>() ->
+  ? <span style="color: #8ae234;">check_trace</span>( <span style="color: #729fcf; font-weight: bold;">begin</span>
+                  <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Run stage:</span>
+                  <span style="color: #8ae234; font-weight: bold;">launch_system</span>(),
+                  <span style="color: #8ae234; font-weight: bold;">do_stuff</span>(),
+                  <span style="color: #8ae234; font-weight: bold;">wait_for_completion</span>(),
+                  <span style="color: #8ae234; font-weight: bold;">get_result</span>()
+                <span style="color: #729fcf; font-weight: bold;">end</span>,
+                <span style="color: #729fcf; font-weight: bold;">fun</span>( <span style="color: #eeeeaa;">Result</span>,  <span style="color: #eeeeaa;">Trace</span>) ->
+                   <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Check stage:</span>
+                  ? <span style="color: #8ae234;">assertMatch</span>(ok,  <span style="color: #eeeeaa;">Result</span>),
+                   <span style="color: #8ae234; font-weight: bold;">check_history</span>( <span style="color: #eeeeaa;">Trace</span>),
+                   <span style="color: #8ae234; font-weight: bold;">check_history2</span>( <span style="color: #eeeeaa;">Trace</span>),
+                  ...
+                <span style="color: #729fcf; font-weight: bold;">end</span>).
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org8517c84" class="outline-3">
+ <h3 id="org8517c84">Waiting for events</h3>
+ <div class="outline-text-3" id="text-org8517c84">
+ <p>
+It is possible to block run stage until a certain event occurs:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">block_until</span>(#{ ? <span style="color: #8ae234;">snk_kind</span>  := message_acked
+              , message_id :=  <span style="color: #eeeeaa;">Id</span>
+              }  <span style="color: #729fcf; font-weight: bold;">when</span>  <span style="color: #eeeeaa;">Id</span> > 42,
+              <span style="color: #eeeeaa;">Timeout</span>,  <span style="color: #eeeeaa;">BackInTime</span>)
+</pre>
+</div>
+
+ <p>
+This macro will return immediately as soon as the event happens, so it's more efficient and less prone to flakiness than a sleep.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org1dc0c78" class="outline-3">
+ <h3 id="org1dc0c78">Starting an asynchronous action</h3>
+ <div class="outline-text-3" id="text-org1dc0c78">
+ <p>
+ <code>?block_until</code> is fine, but it requires timeout tuning.
+What if the same event happened in the past?
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">wait_async_action</span>(  <span style="color: #8ae234; font-weight: bold;">send_async_request</span>( <span style="color: #eeeeaa;">Req</span>)
+                  , #{ ? <span style="color: #8ae234;">snk_kind</span> := request_handled
+                     , request :=  <span style="color: #eeeeaa;">Req</span>
+                     }
+                 [,  <span style="color: #eeeeaa;">Timeout</span>]
+                  )
+</pre>
+</div>
+
+ <p>
+This macro doesn't have to look into the past.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgfa8e91d" class="outline-3">
+ <h3 id="orgfa8e91d">Integrating with PropER</h3>
+ <div class="outline-text-3" id="text-orgfa8e91d">
+ <p>
+It's not a problem to combine stateless PropER tests with snabbkaffe.
+ <code>?check_trace</code> macro can be used inside proper's  <code>?FORALL</code> macro.
+</p>
+
+ <p>
+Snabbkaffe provides some convenience macros that simplify trace-property-based testing:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">trace_prop_test</span>( <span style="color: #eeeeaa;">Config</span>) ->
+   <span style="color: #eeeeaa;">Prop</span> = ? <span style="color: #8ae234;">forall_trace</span>(
+             <span style="color: #eeeeaa;">X</span>,  <span style="color: #729fcf;">list</span>(),
+             <span style="color: #729fcf; font-weight: bold;">begin</span>
+               <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Run stage:</span>
+               <span style="color: #8ae234; font-weight: bold;">do_stuff</span>( <span style="color: #eeeeaa;">X</span>)
+             <span style="color: #729fcf; font-weight: bold;">end</span>,
+             <span style="color: #729fcf; font-weight: bold;">fun</span>( <span style="color: #eeeeaa;">Result</span>,  <span style="color: #eeeeaa;">Trace</span>) ->
+                 <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Check stage</span>
+                true
+             <span style="color: #729fcf; font-weight: bold;">end</span>),
+  ? <span style="color: #8ae234;">run_prop</span>( <span style="color: #eeeeaa;">Config</span>,  <span style="color: #eeeeaa;">Prop</span>).
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org492aecc" class="outline-3">
+ <h3 id="org492aecc">Misc. macros</h3>
+ <div class="outline-text-3" id="text-org492aecc">
+ <p>
+There are a few macros that are not directly related to trace-based testing, but often needed:
+</p>
+</div>
+
+ <ul class="org-ul"> <li> <a id="org71b3f1b"></a>?panic <br></br> <div class="outline-text-4" id="text-org71b3f1b">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">panic</span>( <span style="color: #ad7fa8; font-style: italic;">"Unexpected result"</span>, #{result =>  <span style="color: #eeeeaa;">A</span>})
+</pre>
+</div>
+
+ <p>
+Throw an error
+</p>
+</div>
+</li>
+
+ <li> <a id="orged9dd6e"></a>?retry <br></br> <div class="outline-text-4" id="text-orged9dd6e">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">retry</span>( <span style="color: #eeeeaa;">_RetryPeriod</span> = 100,  <span style="color: #eeeeaa;">_MaxRetries</span> = 10,
+        <span style="color: #8ae234; font-weight: bold;">some_action_that_can_fail</span>())
+</pre>
+</div>
+
+ <p>
+Run some code periodically until it succeeds (use as the last resort, when  <code>?block_until</code> won't work)
+</p>
+</div>
+</li>
+
+ <li> <a id="org7ed8312"></a>?give_or_take <br></br> <div class="outline-text-4" id="text-org7ed8312">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">give_or_take</span>( <span style="color: #eeeeaa;">_Expected</span> = 20,  <span style="color: #eeeeaa;">_Deviation</span> = 2,  <span style="color: #eeeeaa;">Value</span>)
+</pre>
+</div>
+
+ <p>
+Check that an integer value is within range
+</p>
+</div>
+</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org68c1ea8" class="outline-2">
+ <h2 id="org68c1ea8">Basic functions for working with traces</h2>
+ <div class="outline-text-2" id="text-org68c1ea8">
+</div>
+ <div id="outline-container-orgcf790fc" class="outline-3">
+ <h3 id="orgcf790fc">Structure of the trace event</h3>
+ <div class="outline-text-3" id="text-orgcf790fc">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[#{ ? <span style="color: #8ae234;">snk_kind</span> => foo
+  , ? <span style="color: #8ae234;">snk_meta</span> => #{ domain => [foo, bar]
+                  , node =>  <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>
+                  , time => <monotonic time>
+                  , pid => <0.343.0>
+                  , group_leader => <0.67.0>
+                  , custom_field1 => baz
+                  , custom_field2 => foobar
+                  }
+  , field1 => 42
+  , field2 => foo
+  },
+  ...
+]
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org5683fa4" class="outline-3">
+ <h3 id="org5683fa4">Structure of the span trace</h3>
+ <div class="outline-text-3" id="text-org5683fa4">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[#{ ? <span style="color: #8ae234;">snk_kind</span> => foo
+  , ? <span style="color: #8ae234;">snk_meta</span> => #{ ... }
+  , ? <span style="color: #8ae234;">snk_span</span> => start
+  , field1 => 42
+  , field2 => foo
+  },
+ #{ ? <span style="color: #8ae234;">snk_kind</span> => foo
+  , ? <span style="color: #8ae234;">snk_meta</span> => #{ ... }
+  , ? <span style="color: #8ae234;">snk_span</span> => {complete,  <span style="color: #eeeeaa;">ReturnValue</span>}
+  , field1 => 42
+  , field2 => foo
+  }
+]
+</pre>
+</div>
+</div>
+</div>
+
+
+ <div id="outline-container-org69e5f53" class="outline-3">
+ <h3 id="org69e5f53">Filtering the trace</h3>
+ <div class="outline-text-3" id="text-org69e5f53">
+</div>
+ <ul class="org-ul"> <li> <a id="org1326044"></a>?of_kind macro <br></br> <div class="outline-text-4" id="text-org1326044">
+ <div class="org-src-container">
+ <pre class="src src-erlang">FooEvents = ? <span style="color: #8ae234;">of_kind</span>(foo,  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">FooOrBarEvents = ? <span style="color: #8ae234;">of_kind</span>([foo, bar],  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org8484fa0"></a>?of_domain macro <br></br> <div class="outline-text-4" id="text-org8484fa0">
+ <div class="org-src-container">
+ <pre class="src src-erlang">EMQXEvents = ? <span style="color: #8ae234;">of_domain</span>([emqx| <span style="color: #eeeeaa;">_</span>],  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org563c40d"></a>?of_node macro <br></br> <div class="outline-text-4" id="text-org563c40d">
+ <div class="org-src-container">
+ <pre class="src src-erlang">NodeFooEvents = ? <span style="color: #8ae234;">of_node</span>( <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org057e9ba"></a>More complex filtering <br></br> <div class="outline-text-4" id="text-org057e9ba">
+ <p>
+Of course,  <code>lists:filter</code> and list comprehensions work too
+</p>
+</div>
+</li>
+</ul></div>
+
+ <div id="outline-container-org66873d1" class="outline-3">
+ <h3 id="org66873d1">Extracting fields</h3>
+ <div class="outline-text-3" id="text-org66873d1">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[1, 2] = ? <span style="color: #8ae234;">projection</span>(id, ? <span style="color: #8ae234;">of_kind</span>(handle_message,  <span style="color: #eeeeaa;">Trace</span>))
+</pre>
+</div>
+ <div class="org-src-container">
+ <pre class="src src-erlang">[{1,  <span style="color: #ad7fa8; font-style: italic;">"hello"</span>}, {2,  <span style="color: #ad7fa8; font-style: italic;">"world"</span>}] =
+     ? <span style="color: #8ae234;">projection</span>( [id, message]
+                , ? <span style="color: #8ae234;">of_kind</span>(handle_message,  <span style="color: #eeeeaa;">Trace</span>)
+                )
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org3b8654b" class="outline-2">
+ <h2 id="org3b8654b">Event correlations</h2>
+ <div class="outline-text-2" id="text-org3b8654b">
+</div>
+ <div id="outline-container-orge04d404" class="outline-3">
+ <h3 id="orge04d404">?strict_causality macro</h3>
+ <div class="outline-text-3" id="text-orge04d404">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">strict_causality</span>( #{? <span style="color: #8ae234;">snk_kind</span> := msg_received, id :=  <span style="color: #eeeeaa;">_Id</span>}
+                 , #{? <span style="color: #8ae234;">snk_kind</span> := msg_processed, id :=  <span style="color: #eeeeaa;">_Id</span>}
+                 ,  <span style="color: #eeeeaa;">Trace</span>
+                 )
+</pre>
+</div>
+
+ <p>
+Return value:
+</p>
+
+ <ul class="org-ul"> <li> <code>true</code> if some matching events were found</li>
+ <li> <code>false</code> if no events were found</li>
+ <li>exception if causality is violated</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org9d6d374" class="outline-3">
+ <h3 id="org9d6d374">?strict_causality with guard</h3>
+ <div class="outline-text-3" id="text-org9d6d374">
+ <p>
+Suppose we're testing a "base64 server":
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">strict_causality</span>( #{req :=  <span style="color: #eeeeaa;">_Req</span>}
+                 , #{resp :=  <span style="color: #eeeeaa;">_Resp</span>}
+                 ,  <span style="color: #eeeeaa;">_Resp</span> =:=  <span style="color: #8ae234; font-weight: bold;">base64</span>: <span style="color: #8ae234; font-weight: bold;">encode</span>( <span style="color: #eeeeaa;">_Req</span>)
+                 ,  <span style="color: #eeeeaa;">Trace</span>
+                 )
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orgd2de5f0" class="outline-3">
+ <h3 id="orgd2de5f0">?causality macro</h3>
+ <div class="outline-text-3" id="text-orgd2de5f0">
+ <p>
+Overall, it's the same as  <code>?strict_causality</code>, except it doesn't require each ``cause'' to have an ``effect''
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">causality</span>( #{? <span style="color: #8ae234;">snk_kind</span> := msg_received, id :=  <span style="color: #eeeeaa;">_Id</span>}
+          , #{? <span style="color: #8ae234;">snk_kind</span> := msg_processed, id :=  <span style="color: #eeeeaa;">_Id</span>}
+         [,  <span style="color: #eeeeaa;">Guard</span>]
+          ,  <span style="color: #eeeeaa;">Trace</span>
+          )
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orgb837738" class="outline-3">
+ <h3 id="orgb837738">Pitfalls</h3>
+ <div class="outline-text-3" id="text-orgb837738">
+ <p>
+There is a potential problem with ``causality'' macros:
+</p>
+
+ <ol class="org-ol"> <li>Format of the event is changed in the code</li>
+ <li>Match expressions in causality stop matching the events</li>
+ <li>Tests still pass, even though they didn't find any events</li>
+</ol> <p>
+ <b>Solution:</b>
+</p>
+
+ <p>
+Always wrap  <code>?causality</code> and  <code>?strict_causality</code> in  <code>?assert</code>, unless there are legit situations when no events can be produced in the test
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgc61d76b" class="outline-3">
+ <h3 id="orgc61d76b">?find_pairs macro</h3>
+ <div class="outline-text-3" id="text-orgc61d76b">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">find_pairs</span>( <span style="color: #eeeeaa;">Strict</span>,  <span style="color: #eeeeaa;">MatchCause</span>,  <span style="color: #eeeeaa;">MatchEffect</span> [,  <span style="color: #eeeeaa;">Guard</span>] ,  <span style="color: #eeeeaa;">Trace</span>)
+</pre>
+</div>
+
+ <ol class="org-ol"> <li>It returns a list of  <code>{pair, Cause, Effect}</code> or  <code>{singleton, Cause}</code></li>
+
+ <li>When  <code>Strict</code> is  <code>true</code> this macro also checks that effects don't occur before causes (much like  <code>?causality</code>)</li>
+</ol></div>
+</div>
+
+ <div id="outline-container-org979adcc" class="outline-3">
+ <h3 id="org979adcc">Splitting traces</h3>
+ <div class="outline-text-3" id="text-org979adcc">
+ <p>
+Often it is useful to split traces to parts before and after some event (for example, restart)
+</p>
+
+ <p>
+There are a variety of macros for this:
+</p>
+</div>
+
+ <ul class="org-ul"> <li> <a id="org9df05f9"></a>split_at <br></br> <div class="outline-text-4" id="text-org9df05f9">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">split_trace_at</span>(bar, [foo, bar, baz, bar]).
+{[foo], [bar, baz, bar]}.
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="orgc304bfa"></a>splitr <br></br> <div class="outline-text-4" id="text-orgc304bfa">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">splitr_trace</span>(foo, [1, 2, foo, 1, 2, foo])
+[[1, 2], [foo, 1, 2], [foo]].
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org6f07fee"></a>splitl <br></br> <div class="outline-text-4" id="text-org6f07fee">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">splitl_trace</span>(foo, [1, 2, foo, 1, 2, foo]).
+[[1, 2, foo], [1, 2, foo]].
+</pre>
+</div>
+</div>
+</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org6cf409a" class="outline-2">
+ <h2 id="org6cf409a">Nemesis</h2>
+ <div class="outline-text-2" id="text-org6cf409a">
+</div>
+ <div id="outline-container-org26d3b8d" class="outline-3">
+ <h3 id="org26d3b8d">Are your supervisors tested?</h3>
+ <div class="outline-text-3" id="text-org26d3b8d">
+ <ul class="org-ul"> <li>Taking fault-tolerance seriously is one of the selling points of Erlang.
+Organizing processes in supervisor trees is used widely, but not often tested</li>
+
+ <li>Tuning supervisor trees is an art</li>
+
+ <li>Snabbkaffe wants to turn it into a chore</li>
+
+ <li>It does so by injecting deliberate faults into the system</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org243f6b9" class="outline-3">
+ <h3 id="org243f6b9">Fault injection</h3>
+ <div class="outline-text-3" id="text-org243f6b9">
+ <p>
+Any tracepoint can be used to inject errors into the system
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>( #{? <span style="color: #8ae234;">snk_meta</span> := #{domain := [ekka, rlog| <span style="color: #eeeeaa;">_</span>]}}
+             ,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1)
+             )
+
+</pre>
+</div>
+
+ <ul class="org-ul"> <li>First argument: event matching expression</li>
+ <li>Second argument: fault scenario</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org7006054" class="outline-3">
+ <h3 id="org7006054">Fault scenarios</h3>
+ <div class="outline-text-3" id="text-org7006054">
+</div>
+ <ul class="org-ul"> <li> <a id="org1156d43"></a>Always crash: <br></br> <div class="outline-text-4" id="text-org1156d43">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">always_crash</span>())
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org6c86c91"></a>Crash  <code>N</code> times: <br></br> <div class="outline-text-4" id="text-org6c86c91">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">recover_after</span>(10))
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="org468c5c5"></a>Crash randomly with probability  <code>P</code>: <br></br> <div class="outline-text-4" id="text-org468c5c5">
+ <div class="org-src-container">
+ <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1))
+</pre>
+</div>
+</div>
+</li>
+
+ <li> <a id="orgeed0494"></a>Crash periodically: <br></br> <div class="outline-text-4" id="text-orgeed0494">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">periodic_crash</span>(
+   <span style="color: #eeeeaa;">_Period</span> = 10,  <span style="color: #eeeeaa;">_DutyCycle</span> = 0.5,  <span style="color: #eeeeaa;">_Phase</span> =  <span style="color: #8ae234; font-weight: bold;">math</span>: <span style="color: #8ae234; font-weight: bold;">pi</span>())
+</pre>
+</div>
+</div>
+</li>
+</ul></div>
+
+ <div id="outline-container-orgc82edc9" class="outline-3">
+ <h3 id="orgc82edc9">Manipulating process schedulings</h3>
+ <div class="outline-text-3" id="text-orgc82edc9">
+ <ul class="org-ul"> <li>Sometimes it is necessary to test a certain process scheduling</li>
+
+ <li>Imagine working on a bugfix using TDD-style</li>
+
+ <li>For example, normally effect  <code>foo</code> occurs after effect  <code>bar</code>, and everything works.
+But in rare cases the opposite happens, and the bug occurs</li>
+
+ <li>Snabbkaffe can manipulate process schedulings to some extend:</li>
+</ul> <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">run stage...</span>
+? <span style="color: #8ae234;">force_ordering</span>(#{? <span style="color: #8ae234;">snk_kind</span> := bar}, #{? <span style="color: #8ae234;">snk_kind</span> := foo})
+</pre>
+</div>
+
+ <p>
+(It also supports guards)
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org8321c5b" class="outline-2">
+ <h2 id="org8321c5b">Using snabbkaffe as a benchmark library</h2>
+ <div class="outline-text-2" id="text-org8321c5b">
+</div>
+ <div id="outline-container-orga730bbc" class="outline-3">
+ <h3 id="orga730bbc">Disclaimer</h3>
+ <div class="outline-text-3" id="text-orga730bbc">
+ <ul class="org-ul"> <li>This usecase is a secondary, and quite rudimentary. Don't expect much</li>
+ <li>It lacks many features of proper benchmarking libraries, such as
+ <ul class="org-ul"> <li>Warmup</li>
+ <li>Advanced statistical analysis, e.g. outlier detection</li>
+</ul></li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org21ae67c" class="outline-3">
+ <h3 id="org21ae67c">Reporting metrics</h3>
+ <div class="outline-text-3" id="text-org21ae67c">
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report a single scalar datapoint:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stat</span>(scalar_metric_name,  <span style="color: #eeeeaa;">Value</span>),
+ <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report a single datapoint with X coord:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stat</span>(metric_name,  <span style="color: #eeeeaa;">X</span>,  <span style="color: #eeeeaa;">Value</span>),
+ <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report multiple scalar datapoints:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name, [ <span style="color: #eeeeaa;">Val1</span>,  <span style="color: #eeeeaa;">Val2</span>, ...]),
+ <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report multiple datapoints with X coord:</span>
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name,  <span style="color: #eeeeaa;">X</span>, [ <span style="color: #eeeeaa;">Val1</span>,  <span style="color: #eeeeaa;">Val2</span>, ...])
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org3a667d3" class="outline-3">
+ <h3 id="org3a667d3">Using spans to analyze performance</h3>
+ <div class="outline-text-3" id="text-org3a667d3">
+ <p>
+ <code>push_stats</code> function also works together with  <code>?find_pairs</code> macro:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang">Pairs = ? <span style="color: #8ae234;">find_pairs</span>( #{ ? <span style="color: #8ae234;">snk_span</span> := start
+                      , ? <span style="color: #8ae234;">snk_kind</span> := foo
+                      , pid       :=  <span style="color: #eeeeaa;">_Pid</span>
+                      }
+                   , #{ ? <span style="color: #8ae234;">snk_span</span> := {complete,  <span style="color: #eeeeaa;">_</span>}
+                      , ? <span style="color: #8ae234;">snk_kind</span> := foo
+                      , pid       :=  <span style="color: #eeeeaa;">_Pid</span>
+                      }
+                   ),
+ <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name, [ <span style="color: #eeeeaa;">X</span>,]  <span style="color: #eeeeaa;">Pairs</span>)
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org7a891c3" class="outline-3">
+ <h3 id="org7a891c3">Analyzing the results</h3>
+ <div class="outline-text-3" id="text-org7a891c3">
+ <p>
+Use the following function in the end of check stage:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">analyze_statistics</span>()
+</pre>
+</div>
+
+ <p>
+It will print the results in the console:
+</p>
+
+ <pre class="example" id="org245f8ec">
+Mean scalar_metric_name: 10.0
+
+Statisitics of metric_name
+100.479087 ^                                       *
+           |                         *
+           |                   *
+           |
+           |            *
+           |      *
+         0 +---------------------------------------->
+           0                                     1100
+</pre>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orga825231" class="outline-2">
+ <h2 id="orga825231">Conclusion</h2>
+ <div class="outline-text-2" id="text-orga825231">
+</div>
+ <div id="outline-container-org75ae9fe" class="outline-3">
+ <h3 id="org75ae9fe">Useful links</h3>
+ <div class="outline-text-3" id="text-org75ae9fe">
+ <p>
+ <a href="https://github.com/kafka4beam/snabbkaffe">https://github.com/kafka4beam/snabbkaffe</a>
+</p>
+
+ <p>
+The library is being actively developed.
+</p>
+
+ <p>
+Suggestions, bug reports and patches are welcome!
+</p>
+</div>
+
+ <ul class="org-ul"> <li> <a id="org6061f6e"></a>Snabbkaffe in action <br></br> <div class="outline-text-4" id="text-org6061f6e">
+ <p>
+Feel free to use as an example (clickable links):
+</p>
+
+ <ul class="org-ul"> <li> <a href="https://github.com/kafka4beam/brod/blob/master/test/brod_group_subscriber_SUITE.erl">brod</a></li>
+
+ <li> <a href="https://github.com/kafka4beam/kflow/tree/master/test">kflow</a></li>
+
+ <li> <a href="https://github.com/k32/ekka/blob/master/test/ekka_mnesia_SUITE.erl">ekka</a></li>
+
+ <li> <a href="https://github.com/emqx/emqx/">EMQ X</a></li>
+</ul></div>
+</li>
+</ul></div>
+</div>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2021-04-25-snabbkaffe-slides.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2021-04-25-snabbkaffe-slides.html</guid>
+  <pubDate>tis, 01 dec 2020 01:00:00 +0100</pubDate>
+</item>
+<item>
+  <title>Why I use GNU Emacs</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+I spend most of my productive time in GNU Emacs. I had used Visual
+Studio, Eclipse and Vim before I fully converted and never looked
+back. In this post I am going to explain why it was a pragmatic
+choice, and why you also need to give this old editor a try.
+</p>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">1</span> Learning Emacs shortcuts is a great investment</h2>
+ <div class="outline-text-2" id="text-1">
+ <p>
+Emacs shortcuts are ubiquitous in Linux. Most interactive programs
+such as  <code>bash</code>,  <code>busybox sh</code> and  <code>grub2</code> support a few essential Emacs
+shortcuts. Learning them improved my command line-fu tremendously, now
+that I need to keep only one set of shortcuts in the muscle memory.
+</p>
+
+ <p>
+Just to be clear, I think Vim is the king of plain text editing. I
+still miss being able to type something like  <code>s2ge</code> in command mode to
+delete everything up to second letter  <code>e</code> after the cursor, for
+example. Some advanced shells, such as  <code>zsh</code>, support vi mode as
+well. But I have yet to see a single production server using zsh as
+the default shell, let alone in vi mode. So, if you intend to work
+with hosts other than the localhost, most likely you won't have this
+luxury.
+</p>
+
+ <p>
+By the way, this is why I don't recommend remapping the default key
+combinations and stick to the defaults as much as possible.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">2</span> Emacs lets you explore new and obscure programming languages</h2>
+ <div class="outline-text-2" id="text-2">
+ <p>
+Most arguments presented in this section are applicable to any
+powerful text editor.    <a href="https://blog.osteele.com/2004/11/ides">The IDE divide</a> article:
+</p>
+
+ <blockquote>
+ <p>
+The developer world is divided into two camps. Language mavens wax
+rhapsodic about the power of higher-level programming — first-class
+functions, staged programming, AOP, MOPs, and reflection. Tool mavens
+are skilled at the use of integrated build and debug tools, integrated
+documentation, code completion, refactoring, and code
+comprehension. Language mavens tend to use a text editor such as emacs
+or vim — these editors are more likely to work for new languages. Tool
+mavens tend to use IDEs such as Visual Studio, Eclipse, or IntelliJ,
+that integrate a variety of development tools
+</p>
+</blockquote>
+
+ <p>
+In the early days, I had the following checklist of programming
+language worthiness:
+</p>
+
+ <ol class="org-ol"> <li>The language should have a good IDE</li>
+ <li>It should have curly braces, because this is what makes language
+serious</li>
+</ol> <p>
+Thankfully,
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">3</span> elisp is a nicely balanced scripting language</h2>
+ <div class="outline-text-2" id="text-3">
+ <p>
+Fun fact: I switched to Emacs after learning vim well enough to start
+writing my own extensions.
+</p>
+
+ <p>
+Designing a Turing-complete programming language is extremely easy,
+but making a consistent, ergonomic language with orthogonal sets of
+features is extremely hard. That's why accidentally esoteric
+programming languages like vimscript and LAMMPS script exist, and they
+are pain to use. On the other hand, using a heavy-weight and verbose
+programming language such as Java
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">4</span> Org-mode</h2>
+</div>
+</div>]]></description>
+  <link>https://blog.erlang.moe/2020-11-21-gnu-emacs.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2020-11-21-gnu-emacs.html</guid>
+  <pubDate>lör, 21 nov 2020 01:00:00 +0100</pubDate>
+</item>
+<item>
+  <title>How to troubleshoot anything without a clue</title>
+  <description><![CDATA[<div id="content">
+
+ <p>
+In this post I want to share some techniques that I adopted over the
+years of troubleshooting large distributed systems. This list will be
+updated as I come up with more useful generalizations. Disclaimer:
+this article is heavily focused on platform-level development, so it
+may not be fully applicable to other areas of software engineering.
+</p>
+
+ <p>
+"In the ideal world this is absolutely impossible!", some of the
+readers may exclaim in terror and disgust, "This is a bad
+practice!". I will address their concerns in a chapter called "Have
+zero trust in humanity".
+</p>
+
+ <p>
+Although the need to troubleshoot anything mostly arises as a
+consequence of human imperfection, it can be seen from a more positive
+perspective. Imagine that you're using an open source product that
+lacks certain feature. You want to implement this feature, but how to
+approach a large, unfamiliar code base? Some techniques described
+below will help to navigate through the unknown code more quickly.
+</p>
+
+ <div id="outline-container-org5559d68" class="outline-2">
+ <h2 id="org5559d68">Essential dos and don'ts</h2>
+ <div class="outline-text-2" id="text-org5559d68">
+</div>
+ <div id="outline-container-org86af77a" class="outline-3">
+ <h3 id="org86af77a">Don't mess with the production</h3>
+ <div class="outline-text-3" id="text-org86af77a">
+ <p>
+First and foremost: don't use debug tools in the production
+environment. Debuggers or excessive logging put a lot of stress on the
+system, so much so it will likely explode under normal traffic. There
+are introspection tools that are  <i>more or less</i> safe to use in a live
+environment, but one should be careful with those too. I'll discuss
+some of these tools below.
+</p>
+
+ <p>
+Logging in to a live system to run some sort of heavy debug job is
+reckless enough already, but some large companies enforce even worse
+practices.  Namely, they require developers to prepare a "debugging
+runbook" for the ops team. Never agree to do this, unless you
+personally supervise the process in real time. Here's why: suppose you
+verified the instruction on a test node under simulated traffic, and
+you know that it must finish in a couple seconds and the CPU load must
+be so-and-so. Then you login to the production, and the same command
+hangs for more than 10 seconds. You quickly realize that something
+went horribly wrong, and use the last chance to abort the operation
+before the server comes to a complete stop and your SSH session
+dies. Another person won't react as quickly.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org4c0ef4e" class="outline-3">
+ <h3 id="org4c0ef4e">Syslog is your debugger</h3>
+ <div class="outline-text-3" id="text-org4c0ef4e">
+ <p>
+Learn how to debug without debugger. "Printf debugging" is considered
+bad practice by some… Lies. Whoever tells you that, wants to sell
+you pro version of Visual Studio or something as useless. Truth is
+that nowadays most serious systems are distributed. Stop-the-world
+debugger that steps in and over functions won't work in the
+distributed environment. Network sessions will time out and watchdog
+will kill your service, if you try to stop it for debugging. And,
+obviously, you can't stop a production system to debug a user request.
+</p>
+
+ <ul class="org-ul"> <li>Learn how to reason about the systems by reading logs and traces</li>
+ <li>Make sure to log useful information</li>
+ <li>Learn how to read and filter logs efficiently</li>
+ <li>Learn how to quickly map log messages to the locations in the code</li>
+ <li>Employ real-time log collection and indexing tools like
+logstash/elasticsearch, Splunk, etc. in the production</li>
+</ul></div>
+</div>
+
+ <div id="outline-container-org2a212dd" class="outline-3">
+ <h3 id="org2a212dd">Estimate urgency</h3>
+ <div class="outline-text-3" id="text-org2a212dd">
+ <p>
+Impact of software issues varies from "batch job is delayed, and
+quality of service is slowly declining" to "company is losing  <code>$$$$/s</code>
+ <i>right now</i>". Depending on the situation, more aggressive
+troubleshooting techniques become appropriate.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org3575206" class="outline-3">
+ <h3 id="org3575206">Have they tried turning it off and on?</h3>
+ <div class="outline-text-3" id="text-org3575206">
+ <p>
+Don't underestimate the unreasonable effectiveness of
+power-cycling. The ops team needs the run books describing how (and
+when) to restart the misbehaving node.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org2221b6b" class="outline-3">
+ <h3 id="org2221b6b">Don't try to understand how things work</h3>
+ <div class="outline-text-3" id="text-org2221b6b">
+ <p>
+…and focus on finding why they  <i>don't work</i>.
+</p>
+
+ <p>
+Another big mistake: trying to understand the entire code
+base. Typical enterprise system consists of hundreds KLOC, not
+counting dependencies and the underlying stack. It was written by
+dozens of engineers over the years, and it interacts with a few other
+services. It's just not a fair match against a single person working
+under time pressure.  If you try to find out why error happens by
+following the code ("a function that crashes is called from here,
+where data comes from there"), you'll get lost very
+quickly <sup> <a id="fnr.1" class="footref" href="#fn.1">1</a></sup>. You can try this approach, and it  <i>may</i> work with the
+most obvious bugs, but keep in mind that its complexity grows
+rapidly. If you find yourself looking through more than, say, 5 source
+code files at the same time, consider switching to more clever
+techniques described below.
+</p>
+
+ <p>
+Understanding how the system works  <i>will</i> be required later, when you
+work on a "proper" solution, but during the peak firefighting stage
+this knowledge is unobtainable, so you need to be prepared to perform
+surgery without a clue.
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orgbb463b6" class="outline-2">
+ <h2 id="orgbb463b6">Advanced techniques</h2>
+ <div class="outline-text-2" id="text-orgbb463b6">
+</div>
+ <div id="outline-container-org2f61f65" class="outline-3">
+ <h3 id="org2f61f65">Differential troubleshooting</h3>
+ <div class="outline-text-3" id="text-org2f61f65">
+ <p>
+I find this technique absolutely essential for dealing with fires in
+the companies' attics. It is simple, but exceedingly efficient. In
+short, it's a way of reasoning based around questions:
+</p>
+
+ <ol class="org-ol"> <li>Anomaly was reported at 10am, what log messages appeared (or
+disappeared) around this time?</li>
+ <li>It worked before release R, and it doesn't work now. What is the
+delta of the release R?</li>
+ <li>It works with data A, but not data B. What is the delta between
+requests A and B?</li>
+ <li>…</li>
+</ol> <p>
+In other words, you need to find how the anomaly  <i>changes</i> the
+behavior of the system. The more specific your questions become, the
+smaller is your search space. Your goal is to narrow down the
+difference between working and broken state of the system to the
+smallest possible set.
+</p>
+
+ <p>
+Importance of this method is based on the assumption that any
+production system is  <i>mostly</i> correct in a sense that it exhibits
+somewhat sane behavior in 90% of cases. If it was more broken than
+that, nobody would expect it to work in the first place. Therefore,
+trying to find an error simply by following the common code path is
+fruitless, because this code path is  <i>most likely</i> correct.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org0c24c30" class="outline-3">
+ <h3 id="org0c24c30">Bisection</h3>
+ <div class="outline-text-3" id="text-org0c24c30">
+ <p>
+Typically requests have to travel through lots of individual services,
+message brokers, functions and layers of abstraction. As usual,
+bisection is the quickest method of pinpointing the place in the code
+that corrupts the data. Instead of following the request from the
+gateway proxy to the database, try to find what's going on
+approximately in the middle between them. Is data already corrupted
+there?
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgd464f69" class="outline-3">
+ <h3 id="orgd464f69">Surprisal maximization</h3>
+ <div class="outline-text-3" id="text-orgd464f69">
+ <p>
+Wikipedia gives the following definition of surprisal:
+</p>
+
+ <blockquote>
+ <p>
+The information content (also called the surprisal) of an event  <code>E</code> is
+a function which decreases as the probability  <code>p(E)</code> of an event
+increases.
+</p>
+</blockquote>
+
+ <p>
+When analyzing a broken request, or broken data, or broken code, try
+finding the most distinct ("surprisal") part of it. Suppose you're
+looking at some problematic data similar to this:
+</p>
+
+ <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides"> <colgroup> <col class="org-left"></col> <col class="org-right"></col></colgroup> <tbody> <tr> <td class="org-left">id</td>
+ <td class="org-right">345637</td>
+</tr> <tr> <td class="org-left">code</td>
+ <td class="org-right">3</td>
+</tr> <tr> <td class="org-left">errandno</td>
+ <td class="org-right">6422</td>
+</tr></tbody></table> <p>
+Grepping project sources for the field name "code" will likely yield
+thousands of results. Searching for "id" will probably yield even
+more. On the other hand, "errandno" field (whatever it means doesn't
+matter) is pretty uncommon. It's not even an English word, which makes
+it even better for our purposes. Search for "errandno" in the
+company's source code index and you will likely find just 3 or 4
+entries. One of them will point at the origin of the wrong data. Now
+what about integer values? Searching for 3 in the logs will give you
+millions of irrelevant results. So start from looking for
+value 345637.
+</p>
+
+ <p>
+I hope this example makes the idea pretty clear.
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orgb54829d" class="outline-2">
+ <h2 id="orgb54829d">Tools</h2>
+ <div class="outline-text-2" id="text-orgb54829d">
+ <p>
+(To be extended)
+</p>
+</div>
+
+ <div id="outline-container-org3df4080" class="outline-3">
+ <h3 id="org3df4080">Log index</h3>
+ <div class="outline-text-3" id="text-org3df4080">
+ <p>
+Ideally, all logs should be collected in one place and
+indexed. Logstash/elasticsearch/Kibana stack or Splunk are commonly
+used for this.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgca96220" class="outline-3">
+ <h3 id="orgca96220">Ag</h3>
+ <div class="outline-text-3" id="text-orgca96220">
+ <p>
+ <a href="https://github.com/ggreer/the_silver_searcher">https://github.com/ggreer/the_silver_searcher</a> This tool helps to
+navigate through the code, and it's blazing-fast (>100 kLOC project?
+No problem.) I mostly use it via  <code>ag</code> Emacs plugin.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org73746fc" class="outline-3">
+ <h3 id="org73746fc">Source code index</h3>
+ <div class="outline-text-3" id="text-org73746fc">
+ <p>
+Github, bitbucket and other source control servers index all the
+code. Code search feature is essential for finding where error
+messages come from, and for searching low-entropy data during
+troubleshooting. Don't forget to use it.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgfee2f8d" class="outline-3">
+ <h3 id="orgfee2f8d">Perf</h3>
+ <div class="outline-text-3" id="text-orgfee2f8d">
+ <p>
+Perf is a tool that is not  <i>too dangerous</i> to use in production.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org96ce617" class="outline-3">
+ <h3 id="org96ce617">Metrics</h3>
+ <div class="outline-text-3" id="text-org96ce617">
+ <p>
+Of course you should have them.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org23e22ce" class="outline-3">
+ <h3 id="org23e22ce">strace/ltrace</h3>
+ <div class="outline-text-3" id="text-org23e22ce">
+ <p>
+I would not recommend running them in production. But these tools are
+indispensable for local debugging.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgd979d58" class="outline-3">
+ <h3 id="orgd979d58">tcpdump</h3>
+ <div class="outline-text-3" id="text-orgd979d58">
+ <p>
+Tcpdump is more or less safe to use in production (YMMV), but you must
+filter by interface and port. Collect data to a local file and open it
+with wireshark on your PC. Don't save capture file on any NFS mounts,
+and don't print captured packets to the console attached by SSH,
+unless you want to explore limits of infinite recursion.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgbd26dd8" class="outline-3">
+ <h3 id="orgbd26dd8">system_monitor</h3>
+ <div class="outline-text-3" id="text-orgbd26dd8">
+ <p>
+If your system is written in Erlang or Elixir, consider using
+ <a href="https://github.com/klarna-incubator/system_monitor">system_monitor</a> app. It was of tremendous help during many incidents.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org2f29aeb" class="outline-3">
+ <h3 id="org2f29aeb">Emacs "M-x occur" command</h3>
+ <div class="outline-text-3" id="text-org2f29aeb">
+ <p>
+Emacs comes with a handy command called  <code>occur</code>. It does, quote:
+</p>
+
+ <blockquote>
+ <p>
+Show all lines in the current buffer containing a match for REGEXP.
+If a match spreads across multiple lines, all those lines are shown.
+</p>
+</blockquote>
+
+ <p>
+Which is very useful for analyzing log files.
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-orgbb49472" class="outline-2">
+ <h2 id="orgbb49472">Have zero trust in humanity    <span class="tag"> <span class="rant">rant</span></span></h2>
+ <div class="outline-text-2" id="text-orgbb49472">
+ <p>
+If you find yourself dismissing some idea because your inner voice
+says "well, this would be too obvious" or "no one could do something
+like this", chances are that actually you are onto something. After
+seeing bugs that no person should see, I conclude with all confidence,
+that our industry is absolutely cursed. Self-made autodidacts and
+university graduates alike have no idea how to do things. Putting your
+trust in software engineer's ability to do something sane is like
+expecting compensation from the Nigerian prince you helped to liberate
+with the help of your new pen-friend.
+</p>
+
+ <p>
+This raises a question: if nothing can be trusted, how to avoid
+depth-first'ing into your entire OS and hardware stack? The answer
+lies in differential troubleshooting technique described above. You
+can suspect a bug in Linux. But if you do, it means the bug should
+manifest not only in your business application, but in all other
+processes running on the same host. If you don't observe anomalies in
+the other processes, OS bug is less likely than application
+bug. Bisection technique is also useful: if you suspect a Linux kernel
+bug, run strace to find if data that goes into the kernel is valid
+(most likely you will find that it's not).
+</p>
+
+ <p>
+If you know OS and networking level well enough, and you practice
+differential troubleshooting routine, your brain can generate and
+dismiss potential failure scenarios in split second, so suspecting
+services and libraries outside your own is not as time-consuming as
+one may think.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgf7c827a" class="outline-2">
+ <h2 id="orgf7c827a">Don't panic</h2>
+ <div class="outline-text-2" id="text-orgf7c827a">
+ <p>
+When nothing works, try to get some company. The worst thing that can
+happen is when you panic and stop trying new ideas. This happens even
+to the best of us. Brainstorming helps a lot, but just having a
+friendly chat, while something is burning, helps people staying
+productive.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-orgd339b45" class="outline-2">
+ <h2 id="orgd339b45">Nightmare difficulty: "Zero-knowledge troubleshooting"</h2>
+ <div class="outline-text-2" id="text-orgd339b45">
+ <p>
+Any bug is a cakewalk, when it concerns a system that you actively
+develop. But I bet your company has Great Old Ones: systems that work
+largely unnoticed, until they break. And things get much spicier when
+you first learn about such system from a bug report with URGENT!
+headline.
+</p>
+
+ <p>
+I know, I know, situation like this could  <i>never</i> happen in the ideal
+world. But if you're reading this post, then your plane of existence
+intersects with mine. Be wary: in a hellish place that I inhibit,
+people retire, change teams, and there are 10x rock star ninja
+evangelists who develop something in spite of architect's advice just
+to put it on their résumé and hop onto a next job. If you receive a
+trouble report related to one of these systems, and have no idea what
+it does and where it lives, don't worry too much. There is a person
+who knows that: the one who submitted the bug report. Interrogate them
+until you find some entry points towards the system. Learn hostnames,
+keywords, what is the expected behavior, what behavior is unexpected,
+and so forth. Then use source code index and all the techniques
+described above.
+</p>
+
+ <p>
+P.S. If you find yourself solving this kind of problem, don't forget
+to look around and check if you're the last person left in the
+office. Consider tactical retreat in the direction of job market.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org74c9689" class="outline-2">
+ <h2 id="org74c9689">Epilogue</h2>
+ <div class="outline-text-2" id="text-org74c9689">
+ <p>
+This knowledge may ruin your life. If you master these techniques,
+don't let anyone know, or else you may find yourself putting out
+fires non-stop.
+</p>
+
+ <p>
+The best way to apply your troubleshooting skills is by developing new
+systems, rather than keeping legacy code on life support. Most
+appropriate time for bug hunting is  <i>before</i> the software goes
+live. Good troubleshooters make the best programmers, because they
+learned from others' mistakes. They tend to design systems that are
+more resilient to failure, and that are easier to troubleshoot. They
+intuitively see scenarios that should be covered by tests. They
+learned negative, pessimistic way of thinking, that is essential for
+any platform-layer designer. Conversely, any person who can't
+troubleshoot systems, can't be trusted to write platform-level code.
+</p>
+
+ <p>
+Please note that I don't encourage you to program defensively, but
+instead:
+</p>
+
+ <ul class="org-ul"> <li>Separate systems that should have AAA reliability from the systems
+those code should be able to mutate quickly due to business
+requirements</li>
+ <li>Write good tests</li>
+ <li>Design systems that have redundancy</li>
+ <li>Design systems that are fail-safe</li>
+ <li>Employ good deployment practices, like green/blue deployments</li>
+ <li>Keep it simple, stupid. When you write a line of code, imagine that
+someone has to troubleshoot it at 4 am, and they are good at
+this. Which is to say, they  <i>will</i> find where you live.</li>
+</ul></div>
+</div>
+ <div id="footnotes">
+ <h2 class="footnotes">Footnotes: </h2>
+ <div id="text-footnotes">
+
+ <div class="footdef"> <sup> <a id="fn.1" class="footnum" href="#fnr.1">1</a></sup> <div class="footpara"> <p class="footpara">
+Especially when the code is written by a person who read
+"Gang of Four" unironically
+</p></div></div>
+
+
+</div>
+</div></div>]]></description>
+  <link>https://blog.erlang.moe/2019-11-01-troubleshooting.html</link>
+  <guid isPermaLink="false">https://blog.erlang.moe/2019-11-01-troubleshooting.html</guid>
+  <pubDate>sön, 08 nov 2020 01:00:00 +0100</pubDate>
+</item>
 <item>
   <title>Trace-based testing</title>
   <description><![CDATA[<div id="content">
@@ -42,9 +1833,9 @@ testing compares with more traditional approaches such as stateful
 property-based testing.
 </p>
 
- <div id="outline-container-org7d10404" class="outline-2">
- <h2 id="org7d10404">Conventional approach</h2>
- <div class="outline-text-2" id="text-org7d10404">
+ <div id="outline-container-org8d217eb" class="outline-2">
+ <h2 id="org8d217eb">Conventional approach</h2>
+ <div class="outline-text-2" id="text-org8d217eb">
  <p>
 Typical component test usually follows the same common scenario: first
 a clean test environment is created. This probably involves spinning
@@ -100,9 +1891,9 @@ So, what is wrong about this basic and familiar design?
 </p>
 </div>
 
- <div id="outline-container-org46f86fb" class="outline-3">
- <h3 id="org46f86fb">Scalability</h3>
- <div class="outline-text-3" id="text-org46f86fb">
+ <div id="outline-container-org61cb6b4" class="outline-3">
+ <h3 id="org61cb6b4">Scalability</h3>
+ <div class="outline-text-3" id="text-org61cb6b4">
  <p>
 First problem is run time. Obviously, one wants to verify as many
 different properties as possible. But a complex SUT may require a
@@ -155,9 +1946,9 @@ event trace can be recorded once and analyzed however many times.
 </div>
 </div>
 
- <div id="outline-container-org69327a2" class="outline-3">
- <h3 id="org69327a2">Error detection</h3>
- <div class="outline-text-3" id="text-org69327a2">
+ <div id="outline-container-org2e3dbee" class="outline-3">
+ <h3 id="org2e3dbee">Error detection</h3>
+ <div class="outline-text-3" id="text-org2e3dbee">
  <p>
 "Retry N times until test condition becomes true and call it a pass"
 is a pretty common pattern found in tests. Although it works
@@ -187,13 +1978,13 @@ trivially detected in a trace-based test by counting failover events.
 </div>
 </div>
 
- <div id="outline-container-org421e4ee" class="outline-2">
- <h2 id="org421e4ee">Trace-based approach</h2>
- <div class="outline-text-2" id="text-org421e4ee">
+ <div id="outline-container-org7065e0d" class="outline-2">
+ <h2 id="org7065e0d">Trace-based approach</h2>
+ <div class="outline-text-2" id="text-org7065e0d">
 </div>
- <div id="outline-container-org60ec6f3" class="outline-3">
- <h3 id="org60ec6f3">Prior work</h3>
- <div class="outline-text-3" id="text-org60ec6f3">
+ <div id="outline-container-org03aaa56" class="outline-3">
+ <h3 id="org03aaa56">Prior work</h3>
+ <div class="outline-text-3" id="text-org03aaa56">
  <p>
 The below (incomplete!) list contains some examples of libraries using
 trace-based approach:
@@ -208,9 +1999,9 @@ far as my ability to read Clojure goes).</li>
 </ul></div>
 </div>
 
- <div id="outline-container-orga835ed0" class="outline-3">
- <h3 id="orga835ed0">Introducing Snabbkaffe</h3>
- <div class="outline-text-3" id="text-orga835ed0">
+ <div id="outline-container-orgb6cc04e" class="outline-3">
+ <h3 id="orgb6cc04e">Introducing Snabbkaffe</h3>
+ <div class="outline-text-3" id="text-orgb6cc04e">
  <p>
  <a href="https://github.com/klarna/snabbkaffe">Snabbkaffe</a> is a small Erlang application inspired by the above
 libraries. Above all, it tries to be accessible and compatible with
@@ -221,9 +2012,9 @@ errors.
 </div>
 </div>
 
- <div id="outline-container-org3d29699" class="outline-3">
- <h3 id="org3d29699">Instrumenting the code</h3>
- <div class="outline-text-3" id="text-org3d29699">
+ <div id="outline-container-org4cdb852" class="outline-3">
+ <h3 id="org4cdb852">Instrumenting the code</h3>
+ <div class="outline-text-3" id="text-org4cdb852">
  <p>
 Trace points are added to the code manually using  <code>?tp</code> macro:
 </p>
@@ -276,9 +2067,9 @@ that takes 3 arguments:
 </div>
 </div>
 
- <div id="outline-container-org5da2fac" class="outline-3">
- <h3 id="org5da2fac">Structure of the testcase</h3>
- <div class="outline-text-3" id="text-org5da2fac">
+ <div id="outline-container-org55740e3" class="outline-3">
+ <h3 id="org55740e3">Structure of the testcase</h3>
+ <div class="outline-text-3" id="text-org55740e3">
  <p>
 In order to address scalability issue mentioned above, snabbkaffe
 decouples execution of test scenario from the checks. Testcases are
@@ -336,9 +2127,9 @@ parameters that are out of scope of this post.
 </div>
 </div>
 
- <div id="outline-container-org1ab764f" class="outline-3">
- <h3 id="org1ab764f">Analyzing the trace</h3>
- <div class="outline-text-3" id="text-org1ab764f">
+ <div id="outline-container-orgbe05838" class="outline-3">
+ <h3 id="orgbe05838">Analyzing the trace</h3>
+ <div class="outline-text-3" id="text-orgbe05838">
  <p>
 Remember that trace analysis is done offline, so any pure function can
 be used for this task. Snabbakaffe comes with a few useful functions
@@ -447,9 +2238,9 @@ project and stripped of irrelevant details):
 </div>
 </div>
 
- <div id="outline-container-orgd6b0134" class="outline-3">
- <h3 id="orgd6b0134">Waiting for events</h3>
- <div class="outline-text-3" id="text-orgd6b0134">
+ <div id="outline-container-org6c2d32c" class="outline-3">
+ <h3 id="org6c2d32c">Waiting for events</h3>
+ <div class="outline-text-3" id="text-org6c2d32c">
  <p>
 Run stage often needs to wait for something to happen. This can be
 needed, for example, when some part of the system is activated
@@ -504,9 +2295,9 @@ running it.
 </div>
 </div>
 
- <div id="outline-container-org817959c" class="outline-3">
- <h3 id="org817959c">PropER integration</h3>
- <div class="outline-text-3" id="text-org817959c">
+ <div id="outline-container-org7f17b83" class="outline-3">
+ <h3 id="org7f17b83">PropER integration</h3>
+ <div class="outline-text-3" id="text-org7f17b83">
  <p>
 Snabbkaffe works nicely with PropER.  <code>?check_trace</code> macro can be used
 to define stateless properties, and there is, in fact, a shortcut for
@@ -557,9 +2348,9 @@ The below table highlights some of the benefits of each solution:
 </div>
 
 
- <div id="outline-container-orgb46c7b3" class="outline-2">
- <h2 id="orgb46c7b3">Future posts</h2>
- <div class="outline-text-2" id="text-orgb46c7b3">
+ <div id="outline-container-orga50fd48" class="outline-2">
+ <h2 id="orga50fd48">Future posts</h2>
+ <div class="outline-text-2" id="text-orga50fd48">
  <p>
 Here's a teaser of what's coming:
 </p>
@@ -596,1798 +2387,7 @@ actions!
 </div></div>]]></description>
   <link>https://blog.erlang.moe/2019-10-11-hello-world.html</link>
   <guid isPermaLink="false">https://blog.erlang.moe/2019-10-11-hello-world.html</guid>
-  <pubDate>lör, 15 maj 2021 17:54:00 +0200</pubDate>
-</item>
-<item>
-  <title>How to troubleshoot anything without a clue</title>
-  <description><![CDATA[<div id="content">
-
- <p>
-In this post I want to share some techniques that I adopted over the
-years of troubleshooting large distributed systems. This list will be
-updated as I come up with more useful generalizations. Disclaimer:
-this article is heavily focused on platform-level development, so it
-may not be fully applicable to other areas of software engineering.
-</p>
-
- <p>
-"In the ideal world this is absolutely impossible!", some of the
-readers may exclaim in terror and disgust, "This is a bad
-practice!". I will address their concerns in a chapter called "Have
-zero trust in humanity".
-</p>
-
- <p>
-Although the need to troubleshoot anything mostly arises as a
-consequence of human imperfection, it can be seen from a more positive
-perspective. Imagine that you're using an open source product that
-lacks certain feature. You want to implement this feature, but how to
-approach a large, unfamiliar code base? Some techniques described
-below will help to navigate through the unknown code more quickly.
-</p>
-
- <div id="outline-container-orgfc8d7bb" class="outline-2">
- <h2 id="orgfc8d7bb">Essential dos and don'ts</h2>
- <div class="outline-text-2" id="text-orgfc8d7bb">
-</div>
- <div id="outline-container-org18c4f92" class="outline-3">
- <h3 id="org18c4f92">Don't mess with the production</h3>
- <div class="outline-text-3" id="text-org18c4f92">
- <p>
-First and foremost: don't use debug tools in the production
-environment. Debuggers or excessive logging put a lot of stress on the
-system, so much so it will likely explode under normal traffic. There
-are introspection tools that are  <i>more or less</i> safe to use in a live
-environment, but one should be careful with those too. I'll discuss
-some of these tools below.
-</p>
-
- <p>
-Logging in to a live system to run some sort of heavy debug job is
-reckless enough already, but some large companies enforce even worse
-practices.  Namely, they require developers to prepare a "debugging
-runbook" for the ops team. Never agree to do this, unless you
-personally supervise the process in real time. Here's why: suppose you
-verified the instruction on a test node under simulated traffic, and
-you know that it must finish in a couple seconds and the CPU load must
-be so-and-so. Then you login to the production, and the same command
-hangs for more than 10 seconds. You quickly realize that something
-went horribly wrong, and use the last chance to abort the operation
-before the server comes to a complete stop and your SSH session
-dies. Another person won't react as quickly.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org0fc4607" class="outline-3">
- <h3 id="org0fc4607">Syslog is your debugger</h3>
- <div class="outline-text-3" id="text-org0fc4607">
- <p>
-Learn how to debug without debugger. "Printf debugging" is considered
-bad practice by some… Lies. Whoever tells you that, wants to sell
-you pro version of Visual Studio or something as useless. Truth is
-that nowadays most serious systems are distributed. Stop-the-world
-debugger that steps in and over functions won't work in the
-distributed environment. Network sessions will time out and watchdog
-will kill your service, if you try to stop it for debugging. And,
-obviously, you can't stop a production system to debug a user request.
-</p>
-
- <ul class="org-ul"> <li>Learn how to reason about the systems by reading logs and traces</li>
- <li>Make sure to log useful information</li>
- <li>Learn how to read and filter logs efficiently</li>
- <li>Learn how to quickly map log messages to the locations in the code</li>
- <li>Employ real-time log collection and indexing tools like
-logstash/elasticsearch, Splunk, etc. in the production</li>
-</ul></div>
-</div>
-
- <div id="outline-container-org34fb64d" class="outline-3">
- <h3 id="org34fb64d">Estimate urgency</h3>
- <div class="outline-text-3" id="text-org34fb64d">
- <p>
-Impact of software issues varies from "batch job is delayed, and
-quality of service is slowly declining" to "company is losing  <code>$$$$/s</code>
- <i>right now</i>". Depending on the situation, more aggressive
-troubleshooting techniques become appropriate.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org8b92158" class="outline-3">
- <h3 id="org8b92158">Have they tried turning it off and on?</h3>
- <div class="outline-text-3" id="text-org8b92158">
- <p>
-Don't underestimate the unreasonable effectiveness of
-power-cycling. The ops team needs the run books describing how (and
-when) to restart the misbehaving node.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org30c4cbc" class="outline-3">
- <h3 id="org30c4cbc">Don't try to understand how things work</h3>
- <div class="outline-text-3" id="text-org30c4cbc">
- <p>
-…and focus on finding why they  <i>don't work</i>.
-</p>
-
- <p>
-Another big mistake: trying to understand the entire code
-base. Typical enterprise system consists of hundreds KLOC, not
-counting dependencies and the underlying stack. It was written by
-dozens of engineers over the years, and it interacts with a few other
-services. It's just not a fair match against a single person working
-under time pressure.  If you try to find out why error happens by
-following the code ("a function that crashes is called from here,
-where data comes from there"), you'll get lost very
-quickly <sup> <a id="fnr.1" class="footref" href="#fn.1">1</a></sup>. You can try this approach, and it  <i>may</i> work with the
-most obvious bugs, but keep in mind that its complexity grows
-rapidly. If you find yourself looking through more than, say, 5 source
-code files at the same time, consider switching to more clever
-techniques described below.
-</p>
-
- <p>
-Understanding how the system works  <i>will</i> be required later, when you
-work on a "proper" solution, but during the peak firefighting stage
-this knowledge is unobtainable, so you need to be prepared to perform
-surgery without a clue.
-</p>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org09cf78a" class="outline-2">
- <h2 id="org09cf78a">Advanced techniques</h2>
- <div class="outline-text-2" id="text-org09cf78a">
-</div>
- <div id="outline-container-org6c94ab3" class="outline-3">
- <h3 id="org6c94ab3">Differential troubleshooting</h3>
- <div class="outline-text-3" id="text-org6c94ab3">
- <p>
-I find this technique absolutely essential for dealing with fires in
-the companies' attics. It is simple, but exceedingly efficient. In
-short, it's a way of reasoning based around questions:
-</p>
-
- <ol class="org-ol"> <li>Anomaly was reported at 10am, what log messages appeared (or
-disappeared) around this time?</li>
- <li>It worked before release R, and it doesn't work now. What is the
-delta of the release R?</li>
- <li>It works with data A, but not data B. What is the delta between
-requests A and B?</li>
- <li>…</li>
-</ol> <p>
-In other words, you need to find how the anomaly  <i>changes</i> the
-behavior of the system. The more specific your questions become, the
-smaller is your search space. Your goal is to narrow down the
-difference between working and broken state of the system to the
-smallest possible set.
-</p>
-
- <p>
-Importance of this method is based on the assumption that any
-production system is  <i>mostly</i> correct in a sense that it exhibits
-somewhat sane behavior in 90% of cases. If it was more broken than
-that, nobody would expect it to work in the first place. Therefore,
-trying to find an error simply by following the common code path is
-fruitless, because this code path is  <i>most likely</i> correct.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orgcd1435d" class="outline-3">
- <h3 id="orgcd1435d">Bisection</h3>
- <div class="outline-text-3" id="text-orgcd1435d">
- <p>
-Typically requests have to travel through lots of individual services,
-message brokers, functions and layers of abstraction. As usual,
-bisection is the quickest method of pinpointing the place in the code
-that corrupts the data. Instead of following the request from the
-gateway proxy to the database, try to find what's going on
-approximately in the middle between them. Is data already corrupted
-there?
-</p>
-</div>
-</div>
-
- <div id="outline-container-org7d7e9dd" class="outline-3">
- <h3 id="org7d7e9dd">Surprisal maximization</h3>
- <div class="outline-text-3" id="text-org7d7e9dd">
- <p>
-Wikipedia gives the following definition of surprisal:
-</p>
-
- <blockquote>
- <p>
-The information content (also called the surprisal) of an event  <code>E</code> is
-a function which decreases as the probability  <code>p(E)</code> of an event
-increases.
-</p>
-</blockquote>
-
- <p>
-When analyzing a broken request, or broken data, or broken code, try
-finding the most distinct ("surprisal") part of it. Suppose you're
-looking at some problematic data similar to this:
-</p>
-
- <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides"> <colgroup> <col class="org-left"></col> <col class="org-right"></col></colgroup> <tbody> <tr> <td class="org-left">id</td>
- <td class="org-right">345637</td>
-</tr> <tr> <td class="org-left">code</td>
- <td class="org-right">3</td>
-</tr> <tr> <td class="org-left">errandno</td>
- <td class="org-right">6422</td>
-</tr></tbody></table> <p>
-Grepping project sources for the field name "code" will likely yield
-thousands of results. Searching for "id" will probably yield even
-more. On the other hand, "errandno" field (whatever it means doesn't
-matter) is pretty uncommon. It's not even an English word, which makes
-it even better for our purposes. Search for "errandno" in the
-company's source code index and you will likely find just 3 or 4
-entries. One of them will point at the origin of the wrong data. Now
-what about integer values? Searching for 3 in the logs will give you
-millions of irrelevant results. So start from looking for
-value 345637.
-</p>
-
- <p>
-I hope this example makes the idea pretty clear.
-</p>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org92af0de" class="outline-2">
- <h2 id="org92af0de">Tools</h2>
- <div class="outline-text-2" id="text-org92af0de">
- <p>
-(To be extended)
-</p>
-</div>
-
- <div id="outline-container-org92176f2" class="outline-3">
- <h3 id="org92176f2">Log index</h3>
- <div class="outline-text-3" id="text-org92176f2">
- <p>
-Ideally, all logs should be collected in one place and
-indexed. Logstash/elasticsearch/Kibana stack or Splunk are commonly
-used for this.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orgfd04092" class="outline-3">
- <h3 id="orgfd04092">Ag</h3>
- <div class="outline-text-3" id="text-orgfd04092">
- <p>
- <a href="https://github.com/ggreer/the_silver_searcher">https://github.com/ggreer/the_silver_searcher</a> This tool helps to
-navigate through the code, and it's blazing-fast (>100 kLOC project?
-No problem.) I mostly use it via  <code>ag</code> Emacs plugin.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org2d3355a" class="outline-3">
- <h3 id="org2d3355a">Source code index</h3>
- <div class="outline-text-3" id="text-org2d3355a">
- <p>
-Github, bitbucket and other source control servers index all the
-code. Code search feature is essential for finding where error
-messages come from, and for searching low-entropy data during
-troubleshooting. Don't forget to use it.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org227e103" class="outline-3">
- <h3 id="org227e103">Perf</h3>
- <div class="outline-text-3" id="text-org227e103">
- <p>
-Perf is a tool that is not  <i>too dangerous</i> to use in production.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orge352ae4" class="outline-3">
- <h3 id="orge352ae4">Metrics</h3>
- <div class="outline-text-3" id="text-orge352ae4">
- <p>
-Of course you should have them.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org4b6ae25" class="outline-3">
- <h3 id="org4b6ae25">strace/ltrace</h3>
- <div class="outline-text-3" id="text-org4b6ae25">
- <p>
-I would not recommend running them in production. But these tools are
-indispensable for local debugging.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org41dd460" class="outline-3">
- <h3 id="org41dd460">tcpdump</h3>
- <div class="outline-text-3" id="text-org41dd460">
- <p>
-Tcpdump is more or less safe to use in production (YMMV), but you must
-filter by interface and port. Collect data to a local file and open it
-with wireshark on your PC. Don't save capture file on any NFS mounts,
-and don't print captured packets to the console attached by SSH,
-unless you want to explore limits of infinite recursion.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orgcbdcd7e" class="outline-3">
- <h3 id="orgcbdcd7e">system_monitor</h3>
- <div class="outline-text-3" id="text-orgcbdcd7e">
- <p>
-If your system is written in Erlang or Elixir, consider using
- <a href="https://github.com/klarna-incubator/system_monitor">system_monitor</a> app. It was of tremendous help during many incidents.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org37c5991" class="outline-3">
- <h3 id="org37c5991">Emacs "M-x occur" command</h3>
- <div class="outline-text-3" id="text-org37c5991">
- <p>
-Emacs comes with a handy command called  <code>occur</code>. It does, quote:
-</p>
-
- <blockquote>
- <p>
-Show all lines in the current buffer containing a match for REGEXP.
-If a match spreads across multiple lines, all those lines are shown.
-</p>
-</blockquote>
-
- <p>
-Which is very useful for analyzing log files.
-</p>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org23fbb53" class="outline-2">
- <h2 id="org23fbb53">Have zero trust in humanity    <span class="tag"> <span class="rant">rant</span></span></h2>
- <div class="outline-text-2" id="text-org23fbb53">
- <p>
-If you find yourself dismissing some idea because your inner voice
-says "well, this would be too obvious" or "no one could do something
-like this", chances are that actually you are onto something. After
-seeing bugs that no person should see, I conclude with all confidence,
-that our industry is absolutely cursed. Self-made autodidacts and
-university graduates alike have no idea how to do things. Putting your
-trust in software engineer's ability to do something sane is like
-expecting compensation from the Nigerian prince you helped to liberate
-with the help of your new pen-friend.
-</p>
-
- <p>
-This raises a question: if nothing can be trusted, how to avoid
-depth-first'ing into your entire OS and hardware stack? The answer
-lies in differential troubleshooting technique described above. You
-can suspect a bug in Linux. But if you do, it means the bug should
-manifest not only in your business application, but in all other
-processes running on the same host. If you don't observe anomalies in
-the other processes, OS bug is less likely than application
-bug. Bisection technique is also useful: if you suspect a Linux kernel
-bug, run strace to find if data that goes into the kernel is valid
-(most likely you will find that it's not).
-</p>
-
- <p>
-If you know OS and networking level well enough, and you practice
-differential troubleshooting routine, your brain can generate and
-dismiss potential failure scenarios in split second, so suspecting
-services and libraries outside your own is not as time-consuming as
-one may think.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org97ce66f" class="outline-2">
- <h2 id="org97ce66f">Don't panic</h2>
- <div class="outline-text-2" id="text-org97ce66f">
- <p>
-When nothing works, try to get some company. The worst thing that can
-happen is when you panic and stop trying new ideas. This happens even
-to the best of us. Brainstorming helps a lot, but just having a
-friendly chat, while something is burning, helps people staying
-productive.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orga9c1bda" class="outline-2">
- <h2 id="orga9c1bda">Nightmare difficulty: "Zero-knowledge troubleshooting"</h2>
- <div class="outline-text-2" id="text-orga9c1bda">
- <p>
-Any bug is a cakewalk, when it concerns a system that you actively
-develop. But I bet your company has Great Old Ones: systems that work
-largely unnoticed, until they break. And things get much spicier when
-you first learn about such system from a bug report with URGENT!
-headline.
-</p>
-
- <p>
-I know, I know, situation like this could  <i>never</i> happen in the ideal
-world. But if you're reading this post, then your plane of existence
-intersects with mine. Be wary: in a hellish place that I inhibit,
-people retire, change teams, and there are 10x rock star ninja
-evangelists who develop something in spite of architect's advice just
-to put it on their résumé and hop onto a next job. If you receive a
-trouble report related to one of these systems, and have no idea what
-it does and where it lives, don't worry too much. There is a person
-who knows that: the one who submitted the bug report. Interrogate them
-until you find some entry points towards the system. Learn hostnames,
-keywords, what is the expected behavior, what behavior is unexpected,
-and so forth. Then use source code index and all the techniques
-described above.
-</p>
-
- <p>
-P.S. If you find yourself solving this kind of problem, don't forget
-to look around and check if you're the last person left in the
-office. Consider tactical retreat in the direction of job market.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orgb54f73f" class="outline-2">
- <h2 id="orgb54f73f">Epilogue</h2>
- <div class="outline-text-2" id="text-orgb54f73f">
- <p>
-This knowledge may ruin your life. If you master these techniques,
-don't let anyone know, or else you may find yourself putting out
-fires non-stop.
-</p>
-
- <p>
-The best way to apply your troubleshooting skills is by developing new
-systems, rather than keeping legacy code on life support. Most
-appropriate time for bug hunting is  <i>before</i> the software goes
-live. Good troubleshooters make the best programmers, because they
-learned from others' mistakes. They tend to design systems that are
-more resilient to failure, and that are easier to troubleshoot. They
-intuitively see scenarios that should be covered by tests. They
-learned negative, pessimistic way of thinking, that is essential for
-any platform-layer designer. Conversely, any person who can't
-troubleshoot systems, can't be trusted to write platform-level code.
-</p>
-
- <p>
-Please note that I don't encourage you to program defensively, but
-instead:
-</p>
-
- <ul class="org-ul"> <li>Separate systems that should have AAA reliability from the systems
-those code should be able to mutate quickly due to business
-requirements</li>
- <li>Write good tests</li>
- <li>Design systems that have redundancy</li>
- <li>Design systems that are fail-safe</li>
- <li>Employ good deployment practices, like green/blue deployments</li>
- <li>Keep it simple, stupid. When you write a line of code, imagine that
-someone has to troubleshoot it at 4 am, and they are good at
-this. Which is to say, they  <i>will</i> find where you live.</li>
-</ul></div>
-</div>
- <div id="footnotes">
- <h2 class="footnotes">Footnotes: </h2>
- <div id="text-footnotes">
-
- <div class="footdef"> <sup> <a id="fn.1" class="footnum" href="#fnr.1">1</a></sup> <div class="footpara"> <p class="footpara">
-Especially when the code is written by a person who read
-"Gang of Four" unironically
-</p></div></div>
-
-
-</div>
-</div></div>]]></description>
-  <link>https://blog.erlang.moe/2019-11-01-troubleshooting.html</link>
-  <guid isPermaLink="false">https://blog.erlang.moe/2019-11-01-troubleshooting.html</guid>
-  <pubDate>lör, 15 maj 2021 17:54:00 +0200</pubDate>
-</item>
-<item>
-  <title>This messenger respects your privacy</title>
-  <description><![CDATA[<div id="content">
-
- <p>
-Today I want to introduce Acme, a new instant messenger with E2E
-encryption and blast processing, that respects your privacy! It's not
-just for everyone, it is specifically targeted towards journalists who
-need to communicate with their sources, dissidents and other people
- <del>whose metadata and social graph is especially interesting to
-honeypot</del> in need of strong privacy. Forget about obsolete
-decentralized stuff like GPG, and install AcmeIM from Grahma Play
-Store today.
-</p>
-
- <div id="outline-container-orga67d972" class="outline-2">
- <h2 id="orga67d972">Mobile number</h2>
- <div class="outline-text-2" id="text-orga67d972">
- <p>
-Unlike obsolete encryption systems, we require mobile phone to
-register in our system. Your account is tied to your phone
-number. Never mind that in many countries around the world SIM-cards
-can be bought only after presenting a legal ID, and that mobile
-networks themselves have all-encompassing LI (Lawful Interception)
-interfaces by design. Also let's ignore the fact that mobile networks
-still heavily rely on SS7 protocol stack from the 70s, with the
-security model based on gentlemen's agreement. Some people claim that
-words "mobile network" and "secure" can't be used in the same
-sentence, but our security experts think it's very safe. Do you guys
-not have phones?
-</p>
-</div>
-</div>
-
- <div id="outline-container-org808ed9f" class="outline-2">
- <h2 id="org808ed9f">Centralized</h2>
- <div class="outline-text-2" id="text-org808ed9f">
- <p>
-Our messenger uses client-server approach. (You can't run your own
-server, BTW.) This allows us to iterate faster than the obsolete
-p2p/federated networks. We promise not to store any metadata on our
-servers. Remember, end-to-end encryption = safe.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orga982c5f" class="outline-2">
- <h2 id="orga982c5f">Grahma play store</h2>
- <div class="outline-text-2" id="text-orga982c5f">
- <p>
-You can only download the client from the Grahma play store, so we can
-iterate faster. Grahma inc. is the champion of privacy and freedom, so
-we heavily rely on their APIs as well. It also helps us to update Acme
-client automatically. Suppose some so-called experts "audited" certain
-version of Acme. By doing that, they basically invited users to stick
-to the old version and hinder our ability to evolve, and put our users
-in risk. So we don't allow that.
-</p>
-
- <p>
-P.S. Grahma and friends  <i>certainly</i> don't have the list of apps
-running on your phone, so it's safe to install AcmeIM without drawing
-any attention.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org31a95cf" class="outline-2">
- <h2 id="org31a95cf">Obsolete technologies</h2>
- <div class="outline-text-2" id="text-org31a95cf">
- <p>
-There are old cryptography tools that don't need centralized server,
-or mobile phone. They are modular enough, so the cyphertext can be
-embedded in DCT coefficients of cat pictures posted on @channel. In
-the current year this approach is a joke. It is extremely user
-unfriendly.
-</p>
-
- <p>
-Security experts proclaim these old tools obsolete and can't wait
-until they die. Don't use them and download AcmeIM today!
-</p>
-
- <p>
- <i>tagged: humor</i>
-</p>
-</div>
-</div>
-</div>]]></description>
-  <link>https://blog.erlang.moe/2020-12-01-acme-messenger.html</link>
-  <guid isPermaLink="false">https://blog.erlang.moe/2020-12-01-acme-messenger.html</guid>
-  <pubDate>lör, 15 maj 2021 17:54:00 +0200</pubDate>
-</item>
-<item>
-  <title>Planning vs. prototyping</title>
-  <description><![CDATA[<div id="content">
-
- <p>
-The process of software engineering has two aspects: creative and
-social. Neglecting the social aspect leads to products that nobody can
-understand, support or use. Neglecting the creative aspect leads to
-total waste of resources and products that never ship. In this post I
-propose a simple formula that helps to strike the right balance
-between the two.
-</p>
-
- <p>
-Let \(T_i\) is time needed to write the code demonstrating the approach,
-\(T_r\) is time needed to rollback the code, if the approach does not
-work, and \(T_d\) is time needed to discuss whether the approach will
-work, then the following inequality must hold:
-</p>
-
- <p>
-\[
-T_d \leq T_i + T_r
-\]
-</p>
-
- <p>
- <i>tagged: rant</i>
-</p>
-</div>]]></description>
-  <link>https://blog.erlang.moe/2021-02-12-just-do-it.html</link>
-  <guid isPermaLink="false">https://blog.erlang.moe/2021-02-12-just-do-it.html</guid>
-  <pubDate>lör, 15 maj 2021 17:54:00 +0200</pubDate>
-</item>
-<item>
-  <title>Introduction to Snabbkaffe</title>
-  <description><![CDATA[<div id="content">
-
- <p>
-This is an HTML version of snabbkaffe presentation slides.
-</p>
-
- <div id="outline-container-org3cf7a1b" class="outline-2">
- <h2 id="org3cf7a1b">Background and motivation</h2>
- <div class="outline-text-2" id="text-org3cf7a1b">
-</div>
- <div id="outline-container-org9596e82" class="outline-3">
- <h3 id="org9596e82">What is snabbkaffe</h3>
- <div class="outline-text-3" id="text-org9596e82">
- <ul class="org-ul"> <li>Snabbkaffe is a library that allows to test concurrent and distributed systems</li>
-
- <li>It does so by moving focus from  <i>states</i> to  <i>effects</i></li>
-
- <li>Developers find bugs by looking at the logs, snabbkaffe does the same and automates the process</li>
-
- <li>Advanced modes of testing: fault and scheduling injection</li>
-
- <li>Efficiency: run test scenario once, verify multiple properties</li>
-</ul></div>
-</div>
-
- <div id="outline-container-orgb4296fc" class="outline-3">
- <h3 id="orgb4296fc">Name</h3>
- <div class="outline-text-3" id="text-orgb4296fc">
- <ul class="org-ul"> <li> <code>Snabbkaffe</code> means ``instant coffee'' in Swedish</li>
-
- <li>There is no hidden meaning, the name was chosen randomly</li>
-</ul></div>
-</div>
-
- <div id="outline-container-org9460bdd" class="outline-3">
- <h3 id="org9460bdd">Nondeterminism</h3>
- <div class="outline-text-3" id="text-org9460bdd">
-</div>
- <ul class="org-ul"> <li> <a id="org46fcda4"></a>Definitions <br></br> <div class="outline-text-4" id="text-org46fcda4">
- <ul class="org-ul"> <li> <b>Deterministic</b> functions always produce the same output for the same input</li>
-
- <li> <b>Nondeterministic</b> functions can produce different outputs for the same input</li>
-</ul></div>
-</li>
-
- <li> <a id="org41e2c90"></a>Sources of nondeterminism <br></br> <div class="outline-text-4" id="text-org41e2c90">
- <ul class="org-ul"> <li>Process schedulings</li>
-
- <li>Fault-tolerance (failovers)</li>
-
- <li>Network (packet loss and reordering)</li>
-
- <li>Load balancing, worker pools</li>
-</ul> <p>
-Nondeterminism is an inherent property of concurrent systems
-</p>
-</div>
-</li>
-</ul></div>
-
- <div id="outline-container-orga0b9dab" class="outline-3">
- <h3 id="orga0b9dab">Why change the paradigm of testing?</h3>
- <div class="outline-text-3" id="text-orga0b9dab">
-</div>
- <ul class="org-ul"> <li> <a id="orga6506dd"></a>Difficulty levels <br></br> <div class="outline-text-4" id="text-orga6506dd">
- <ol class="org-ol"> <li>Easy: Pure functions</li>
-
- <li>Normal: Stateful systems</li>
-
- <li>Hard: Nondeterministic systems</li>
-
- <li> <b>Nightmare:</b> Nondeterministic fault-tolerant distributed systems</li>
-</ol></div>
-</li>
-
- <li> <a id="org3ba8047"></a>Traditional approach <br></br> <div class="outline-text-4" id="text-org3ba8047">
- <ul class="org-ul"> <li>Traditional approach is sufficient for testing pure functions.
-There are a variety of excellent tools for this, like PropER</li>
-
- <li>It can do pretty well with stateful systems (stateful PropER)</li>
-
- <li> <b>Where it starts to crack:</b> typical Erlang application assembled together</li>
-</ul></div>
-</li>
-</ul></div>
-
- <div id="outline-container-orgda20930" class="outline-3">
- <h3 id="orgda20930">Challenges of testing Erlang applications  <i>in situ</i></h3>
- <div class="outline-text-3" id="text-orgda20930">
- <p>
-Erlang partitions the state of the system between processes
-</p>
-
- <ul class="org-ul"> <li>It eliminates some concurrency bugs and isolates failures</li>
-
- <li>But it makes the system harder to analyze</li>
-
- <li>More often than not it's impossible to inspect state of the process ( <code>sys:get_state</code>)</li>
-
- <li>Often it's useless</li>
-
- <li>Tests that rely on the state usually need to wait for the system to stabilize, it can be slow, and they can't analyze the system in motion</li>
-
- <li>Asynchronous data processing patterns (e.g. job queues) are incredibly annoying to test using traditional methods</li>
-</ul></div>
-</div>
-
- <div id="outline-container-orgaf39dc9" class="outline-3">
- <h3 id="orgaf39dc9">Possible solution to this problem?</h3>
- <div class="outline-text-3" id="text-orgaf39dc9">
- <p>
-Move away from states and embrace events and their temporal relationships
-</p>
-</div>
-</div>
-</div>
-
- <div id="outline-container-orgde21e28" class="outline-2">
- <h2 id="orgde21e28">Instrumenting the code</h2>
- <div class="outline-text-2" id="text-orgde21e28">
-</div>
- <div id="outline-container-org274d230" class="outline-3">
- <h3 id="org274d230">Tracing macros</h3>
- <div class="outline-text-3" id="text-org274d230">
- <ol class="org-ol"> <li>Replace your regular logs with structured logs (the industry is moving towards structured logs anyway)</li>
-
- <li>Include  <code>"snabbkaffe/include/trace.hrl"</code> header to your module</li>
-
- <li>Use  <code>?tp</code> or  <code>?tp_span</code> macros for logging ( <code>tp</code> stands for Trace Point)
-
- <ul class="org-ul"> <li>In the release build these macros will become regular  <code>logger</code> messages</li>
-
- <li>In the test build these macros will emit trace events</li>
-</ul></li>
-</ol></div>
-</div>
-
- <div id="outline-container-org1f33a39" class="outline-3">
- <h3 id="org1f33a39">Examples</h3>
- <div class="outline-text-3" id="text-org1f33a39">
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Disappears in the release build:</span>
-? <span style="color: #8ae234;">tp</span>(rlog_replica_import_trans,
-    #{ seqno       =>  <span style="color: #eeeeaa;">SeqNo</span>
-     , txid        =>  <span style="color: #eeeeaa;">TXID</span>
-     , transaction =>  <span style="color: #eeeeaa;">Transaction</span>
-     })
-</pre>
-</div>
-
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Becomes a notice message</span>
-? <span style="color: #8ae234;">tp</span>(notice,  <span style="color: #ad7fa8; font-style: italic;">"Remote process died"</span>,
-    #{ reason   =>  <span style="color: #eeeeaa;">Reason</span>
-     , my_state =>  <span style="color: #eeeeaa;">State</span>
-     })
-</pre>
-</div>
-
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Emits two events:</span>
-? <span style="color: #8ae234;">tp_span</span>(trans_write, #{record =>  <span style="color: #eeeeaa;">Record</span>, txid =>  <span style="color: #8ae234; font-weight: bold;">get_txid</span>()},
-          <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>( <span style="color: #eeeeaa;">Record</span>)).
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org4099fa6" class="outline-3">
- <h3 id="org4099fa6">Distributed tracing</h3>
- <div class="outline-text-3" id="text-org4099fa6">
- <p>
-Forward traces from the remote node:
-</p>
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">on the ct_master:</span>
- <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">forward_trace</span>( <span style="color: #eeeeaa;">Node</span>)
-</pre>
-</div>
-
- <p>
-All features (incl. fault and scheduling injections) will work
-</p>
-</div>
-</div>
-
- <div id="outline-container-org6ad3bd3" class="outline-3">
- <h3 id="org6ad3bd3">Why not using erlang tracing?</h3>
- <div class="outline-text-3" id="text-org6ad3bd3">
- <p>
-An often asked question: why not using  <code>dbg:tracer</code> or the like?
-</p>
-
- <p>
-It was a conscious design choice:
-</p>
-
- <ul class="org-ul"> <li>Traces obtained this way are tightly bound to the structure of the code. Refactoring the code or adding a new function argument would break the tests</li>
-
- <li>Debug traces are excessive, it would be hard to see the forest through the trees</li>
-
- <li>Log messages are typically placed in ``interesting'' places
- <ul class="org-ul"> <li>Interesting for humans = interesting for tests</li>
-</ul></li>
-</ul></div>
-</div>
-</div>
-
- <div id="outline-container-orgacca4b6" class="outline-2">
- <h2 id="orgacca4b6">Testing</h2>
- <div class="outline-text-2" id="text-orgacca4b6">
-</div>
- <div id="outline-container-orgeec404b" class="outline-3">
- <h3 id="orgeec404b">Stages of the test</h3>
- <div class="outline-text-3" id="text-orgeec404b">
- <p>
-Every testcase is split in two stages:
-</p>
-</div>
-
- <ul class="org-ul"> <li> <a id="orgbc84a12"></a>Run stage <br></br> <div class="outline-text-4" id="text-orgbc84a12">
- <p>
-where the program runs and emits the event trace
-</p>
-</div>
-</li>
-
- <li> <a id="org326864c"></a>Check stage <br></br> <div class="outline-text-4" id="text-org326864c">
- <p>
-where the trace is collected as a list of Erlang maps and validated against the spec(s)
-</p>
-</div>
-</li>
-</ul></div>
-
- <div id="outline-container-orgb749967" class="outline-3">
- <h3 id="orgb749967">check_trace macro</h3>
- <div class="outline-text-3" id="text-orgb749967">
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">my_test</span>() ->
-  ? <span style="color: #8ae234;">check_trace</span>( <span style="color: #729fcf; font-weight: bold;">begin</span>
-                  <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Run stage:</span>
-                  <span style="color: #8ae234; font-weight: bold;">launch_system</span>(),
-                  <span style="color: #8ae234; font-weight: bold;">do_stuff</span>(),
-                  <span style="color: #8ae234; font-weight: bold;">wait_for_completion</span>(),
-                  <span style="color: #8ae234; font-weight: bold;">get_result</span>()
-                <span style="color: #729fcf; font-weight: bold;">end</span>,
-                <span style="color: #729fcf; font-weight: bold;">fun</span>( <span style="color: #eeeeaa;">Result</span>,  <span style="color: #eeeeaa;">Trace</span>) ->
-                   <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Check stage:</span>
-                  ? <span style="color: #8ae234;">assertMatch</span>(ok,  <span style="color: #eeeeaa;">Result</span>),
-                   <span style="color: #8ae234; font-weight: bold;">check_history</span>( <span style="color: #eeeeaa;">Trace</span>),
-                   <span style="color: #8ae234; font-weight: bold;">check_history2</span>( <span style="color: #eeeeaa;">Trace</span>),
-                  ...
-                <span style="color: #729fcf; font-weight: bold;">end</span>).
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-orga56bcfb" class="outline-3">
- <h3 id="orga56bcfb">Waiting for events</h3>
- <div class="outline-text-3" id="text-orga56bcfb">
- <p>
-It is possible to block run stage until a certain event occurs:
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">block_until</span>(#{ ? <span style="color: #8ae234;">snk_kind</span>  := message_acked
-              , message_id :=  <span style="color: #eeeeaa;">Id</span>
-              }  <span style="color: #729fcf; font-weight: bold;">when</span>  <span style="color: #eeeeaa;">Id</span> > 42,
-              <span style="color: #eeeeaa;">Timeout</span>,  <span style="color: #eeeeaa;">BackInTime</span>)
-</pre>
-</div>
-
- <p>
-This macro will return immediately as soon as the event happens, so it's more efficient and less prone to flakiness than a sleep.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org4ef2e1c" class="outline-3">
- <h3 id="org4ef2e1c">Starting an asynchronous action</h3>
- <div class="outline-text-3" id="text-org4ef2e1c">
- <p>
- <code>?block_until</code> is fine, but it requires timeout tuning.
-What if the same event happened in the past?
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">wait_async_action</span>(  <span style="color: #8ae234; font-weight: bold;">send_async_request</span>( <span style="color: #eeeeaa;">Req</span>)
-                  , #{ ? <span style="color: #8ae234;">snk_kind</span> := request_handled
-                     , request :=  <span style="color: #eeeeaa;">Req</span>
-                     }
-                 [,  <span style="color: #eeeeaa;">Timeout</span>]
-                  )
-</pre>
-</div>
-
- <p>
-This macro doesn't have to look into the past.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org63ea2f1" class="outline-3">
- <h3 id="org63ea2f1">Integrating with PropER</h3>
- <div class="outline-text-3" id="text-org63ea2f1">
- <p>
-It's not a problem to combine stateless PropER tests with snabbkaffe.
- <code>?check_trace</code> macro can be used inside proper's  <code>?FORALL</code> macro.
-</p>
-
- <p>
-Snabbkaffe provides some convenience macros that simplify trace-property-based testing:
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">trace_prop_test</span>( <span style="color: #eeeeaa;">Config</span>) ->
-   <span style="color: #eeeeaa;">Prop</span> = ? <span style="color: #8ae234;">forall_trace</span>(
-             <span style="color: #eeeeaa;">X</span>,  <span style="color: #729fcf;">list</span>(),
-             <span style="color: #729fcf; font-weight: bold;">begin</span>
-               <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Run stage:</span>
-               <span style="color: #8ae234; font-weight: bold;">do_stuff</span>( <span style="color: #eeeeaa;">X</span>)
-             <span style="color: #729fcf; font-weight: bold;">end</span>,
-             <span style="color: #729fcf; font-weight: bold;">fun</span>( <span style="color: #eeeeaa;">Result</span>,  <span style="color: #eeeeaa;">Trace</span>) ->
-                 <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Check stage</span>
-                true
-             <span style="color: #729fcf; font-weight: bold;">end</span>),
-  ? <span style="color: #8ae234;">run_prop</span>( <span style="color: #eeeeaa;">Config</span>,  <span style="color: #eeeeaa;">Prop</span>).
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org3f4993b" class="outline-3">
- <h3 id="org3f4993b">Misc. macros</h3>
- <div class="outline-text-3" id="text-org3f4993b">
- <p>
-There are a few macros that are not directly related to trace-based testing, but often needed:
-</p>
-</div>
-
- <ul class="org-ul"> <li> <a id="org57a41ef"></a>?panic <br></br> <div class="outline-text-4" id="text-org57a41ef">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">panic</span>( <span style="color: #ad7fa8; font-style: italic;">"Unexpected result"</span>, #{result =>  <span style="color: #eeeeaa;">A</span>})
-</pre>
-</div>
-
- <p>
-Throw an error
-</p>
-</div>
-</li>
-
- <li> <a id="org2eb8f2c"></a>?retry <br></br> <div class="outline-text-4" id="text-org2eb8f2c">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">retry</span>( <span style="color: #eeeeaa;">_RetryPeriod</span> = 100,  <span style="color: #eeeeaa;">_MaxRetries</span> = 10,
-        <span style="color: #8ae234; font-weight: bold;">some_action_that_can_fail</span>())
-</pre>
-</div>
-
- <p>
-Run some code periodically until it succeeds (use as the last resort, when  <code>?block_until</code> won't work)
-</p>
-</div>
-</li>
-
- <li> <a id="org375c812"></a>?give_or_take <br></br> <div class="outline-text-4" id="text-org375c812">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">give_or_take</span>( <span style="color: #eeeeaa;">_Expected</span> = 20,  <span style="color: #eeeeaa;">_Deviation</span> = 2,  <span style="color: #eeeeaa;">Value</span>)
-</pre>
-</div>
-
- <p>
-Check that an integer value is within range
-</p>
-</div>
-</li>
-</ul></div>
-</div>
-
- <div id="outline-container-org7681368" class="outline-2">
- <h2 id="org7681368">Basic functions for working with traces</h2>
- <div class="outline-text-2" id="text-org7681368">
-</div>
- <div id="outline-container-org42dd032" class="outline-3">
- <h3 id="org42dd032">Structure of the trace event</h3>
- <div class="outline-text-3" id="text-org42dd032">
- <div class="org-src-container">
- <pre class="src src-erlang">[#{ ? <span style="color: #8ae234;">snk_kind</span> => foo
-  , ? <span style="color: #8ae234;">snk_meta</span> => #{ domain => [foo, bar]
-                  , node =>  <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>
-                  , time => <monotonic time>
-                  , pid => <0.343.0>
-                  , group_leader => <0.67.0>
-                  , custom_field1 => baz
-                  , custom_field2 => foobar
-                  }
-  , field1 => 42
-  , field2 => foo
-  },
-  ...
-]
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org73c44b9" class="outline-3">
- <h3 id="org73c44b9">Structure of the span trace</h3>
- <div class="outline-text-3" id="text-org73c44b9">
- <div class="org-src-container">
- <pre class="src src-erlang">[#{ ? <span style="color: #8ae234;">snk_kind</span> => foo
-  , ? <span style="color: #8ae234;">snk_meta</span> => #{ ... }
-  , ? <span style="color: #8ae234;">snk_span</span> => start
-  , field1 => 42
-  , field2 => foo
-  },
- #{ ? <span style="color: #8ae234;">snk_kind</span> => foo
-  , ? <span style="color: #8ae234;">snk_meta</span> => #{ ... }
-  , ? <span style="color: #8ae234;">snk_span</span> => {complete,  <span style="color: #eeeeaa;">ReturnValue</span>}
-  , field1 => 42
-  , field2 => foo
-  }
-]
-</pre>
-</div>
-</div>
-</div>
-
-
- <div id="outline-container-org350d463" class="outline-3">
- <h3 id="org350d463">Filtering the trace</h3>
- <div class="outline-text-3" id="text-org350d463">
-</div>
- <ul class="org-ul"> <li> <a id="orgb7f7f6b"></a>?of_kind macro <br></br> <div class="outline-text-4" id="text-orgb7f7f6b">
- <div class="org-src-container">
- <pre class="src src-erlang">FooEvents = ? <span style="color: #8ae234;">of_kind</span>(foo,  <span style="color: #eeeeaa;">Trace</span>)
-</pre>
-</div>
-
- <div class="org-src-container">
- <pre class="src src-erlang">FooOrBarEvents = ? <span style="color: #8ae234;">of_kind</span>([foo, bar],  <span style="color: #eeeeaa;">Trace</span>)
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="org57510ff"></a>?of_domain macro <br></br> <div class="outline-text-4" id="text-org57510ff">
- <div class="org-src-container">
- <pre class="src src-erlang">EMQXEvents = ? <span style="color: #8ae234;">of_domain</span>([emqx| <span style="color: #eeeeaa;">_</span>],  <span style="color: #eeeeaa;">Trace</span>)
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="orgf5b6814"></a>?of_node macro <br></br> <div class="outline-text-4" id="text-orgf5b6814">
- <div class="org-src-container">
- <pre class="src src-erlang">NodeFooEvents = ? <span style="color: #8ae234;">of_node</span>( <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,  <span style="color: #eeeeaa;">Trace</span>)
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="org86380b4"></a>More complex filtering <br></br> <div class="outline-text-4" id="text-org86380b4">
- <p>
-Of course,  <code>lists:filter</code> and list comprehensions work too
-</p>
-</div>
-</li>
-</ul></div>
-
- <div id="outline-container-orgf2efb1c" class="outline-3">
- <h3 id="orgf2efb1c">Extracting fields</h3>
- <div class="outline-text-3" id="text-orgf2efb1c">
- <div class="org-src-container">
- <pre class="src src-erlang">[1, 2] = ? <span style="color: #8ae234;">projection</span>(id, ? <span style="color: #8ae234;">of_kind</span>(handle_message,  <span style="color: #eeeeaa;">Trace</span>))
-</pre>
-</div>
- <div class="org-src-container">
- <pre class="src src-erlang">[{1,  <span style="color: #ad7fa8; font-style: italic;">"hello"</span>}, {2,  <span style="color: #ad7fa8; font-style: italic;">"world"</span>}] =
-     ? <span style="color: #8ae234;">projection</span>( [id, message]
-                , ? <span style="color: #8ae234;">of_kind</span>(handle_message,  <span style="color: #eeeeaa;">Trace</span>)
-                )
-</pre>
-</div>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org435e7f3" class="outline-2">
- <h2 id="org435e7f3">Event correlations</h2>
- <div class="outline-text-2" id="text-org435e7f3">
-</div>
- <div id="outline-container-orgb13ca95" class="outline-3">
- <h3 id="orgb13ca95">?strict_causality macro</h3>
- <div class="outline-text-3" id="text-orgb13ca95">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">strict_causality</span>( #{? <span style="color: #8ae234;">snk_kind</span> := msg_received, id :=  <span style="color: #eeeeaa;">_Id</span>}
-                 , #{? <span style="color: #8ae234;">snk_kind</span> := msg_processed, id :=  <span style="color: #eeeeaa;">_Id</span>}
-                 ,  <span style="color: #eeeeaa;">Trace</span>
-                 )
-</pre>
-</div>
-
- <p>
-Return value:
-</p>
-
- <ul class="org-ul"> <li> <code>true</code> if some matching events were found</li>
- <li> <code>false</code> if no events were found</li>
- <li>exception if causality is violated</li>
-</ul></div>
-</div>
-
- <div id="outline-container-org67dcdb9" class="outline-3">
- <h3 id="org67dcdb9">?strict_causality with guard</h3>
- <div class="outline-text-3" id="text-org67dcdb9">
- <p>
-Suppose we're testing a "base64 server":
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">strict_causality</span>( #{req :=  <span style="color: #eeeeaa;">_Req</span>}
-                 , #{resp :=  <span style="color: #eeeeaa;">_Resp</span>}
-                 ,  <span style="color: #eeeeaa;">_Resp</span> =:=  <span style="color: #8ae234; font-weight: bold;">base64</span>: <span style="color: #8ae234; font-weight: bold;">encode</span>( <span style="color: #eeeeaa;">_Req</span>)
-                 ,  <span style="color: #eeeeaa;">Trace</span>
-                 )
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org7191dba" class="outline-3">
- <h3 id="org7191dba">?causality macro</h3>
- <div class="outline-text-3" id="text-org7191dba">
- <p>
-Overall, it's the same as  <code>?strict_causality</code>, except it doesn't require each ``cause'' to have an ``effect''
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">causality</span>( #{? <span style="color: #8ae234;">snk_kind</span> := msg_received, id :=  <span style="color: #eeeeaa;">_Id</span>}
-          , #{? <span style="color: #8ae234;">snk_kind</span> := msg_processed, id :=  <span style="color: #eeeeaa;">_Id</span>}
-         [,  <span style="color: #eeeeaa;">Guard</span>]
-          ,  <span style="color: #eeeeaa;">Trace</span>
-          )
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org2652aa5" class="outline-3">
- <h3 id="org2652aa5">Pitfalls</h3>
- <div class="outline-text-3" id="text-org2652aa5">
- <p>
-There is a potential problem with ``causality'' macros:
-</p>
-
- <ol class="org-ol"> <li>Format of the event is changed in the code</li>
- <li>Match expressions in causality stop matching the events</li>
- <li>Tests still pass, even though they didn't find any events</li>
-</ol> <p>
- <b>Solution:</b>
-</p>
-
- <p>
-Always wrap  <code>?causality</code> and  <code>?strict_causality</code> in  <code>?assert</code>, unless there are legit situations when no events can be produced in the test
-</p>
-</div>
-</div>
-
- <div id="outline-container-org82f1a29" class="outline-3">
- <h3 id="org82f1a29">?find_pairs macro</h3>
- <div class="outline-text-3" id="text-org82f1a29">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">find_pairs</span>( <span style="color: #eeeeaa;">Strict</span>,  <span style="color: #eeeeaa;">MatchCause</span>,  <span style="color: #eeeeaa;">MatchEffect</span> [,  <span style="color: #eeeeaa;">Guard</span>] ,  <span style="color: #eeeeaa;">Trace</span>)
-</pre>
-</div>
-
- <ol class="org-ol"> <li>It returns a list of  <code>{pair, Cause, Effect}</code> or  <code>{singleton, Cause}</code></li>
-
- <li>When  <code>Strict</code> is  <code>true</code> this macro also checks that effects don't occur before causes (much like  <code>?causality</code>)</li>
-</ol></div>
-</div>
-
- <div id="outline-container-org8971bd0" class="outline-3">
- <h3 id="org8971bd0">Splitting traces</h3>
- <div class="outline-text-3" id="text-org8971bd0">
- <p>
-Often it is useful to split traces to parts before and after some event (for example, restart)
-</p>
-
- <p>
-There are a variety of macros for this:
-</p>
-</div>
-
- <ul class="org-ul"> <li> <a id="orgacbb7ed"></a>split_at <br></br> <div class="outline-text-4" id="text-orgacbb7ed">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">split_trace_at</span>(bar, [foo, bar, baz, bar]).
-{[foo], [bar, baz, bar]}.
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="orgd25d465"></a>splitr <br></br> <div class="outline-text-4" id="text-orgd25d465">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">splitr_trace</span>(foo, [1, 2, foo, 1, 2, foo])
-[[1, 2], [foo, 1, 2], [foo]].
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="org85bc3dd"></a>splitl <br></br> <div class="outline-text-4" id="text-org85bc3dd">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">splitl_trace</span>(foo, [1, 2, foo, 1, 2, foo]).
-[[1, 2, foo], [1, 2, foo]].
-</pre>
-</div>
-</div>
-</li>
-</ul></div>
-</div>
-
- <div id="outline-container-org56109b6" class="outline-2">
- <h2 id="org56109b6">Nemesis</h2>
- <div class="outline-text-2" id="text-org56109b6">
-</div>
- <div id="outline-container-org435ccde" class="outline-3">
- <h3 id="org435ccde">Are your supervisors tested?</h3>
- <div class="outline-text-3" id="text-org435ccde">
- <ul class="org-ul"> <li>Taking fault-tolerance seriously is one of the selling points of Erlang.
-Organizing processes in supervisor trees is used widely, but not often tested</li>
-
- <li>Tuning supervisor trees is an art</li>
-
- <li>Snabbkaffe wants to turn it into a chore</li>
-
- <li>It does so by injecting deliberate faults into the system</li>
-</ul></div>
-</div>
-
- <div id="outline-container-orgcabd71e" class="outline-3">
- <h3 id="orgcabd71e">Fault injection</h3>
- <div class="outline-text-3" id="text-orgcabd71e">
- <p>
-Any tracepoint can be used to inject errors into the system
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>( #{? <span style="color: #8ae234;">snk_meta</span> := #{domain := [ekka, rlog| <span style="color: #eeeeaa;">_</span>]}}
-             ,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1)
-             )
-
-</pre>
-</div>
-
- <ul class="org-ul"> <li>First argument: event matching expression</li>
- <li>Second argument: fault scenario</li>
-</ul></div>
-</div>
-
- <div id="outline-container-orgc43de40" class="outline-3">
- <h3 id="orgc43de40">Fault scenarios</h3>
- <div class="outline-text-3" id="text-orgc43de40">
-</div>
- <ul class="org-ul"> <li> <a id="orgd28c34f"></a>Always crash: <br></br> <div class="outline-text-4" id="text-orgd28c34f">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">always_crash</span>())
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="org53fa407"></a>Crash  <code>N</code> times: <br></br> <div class="outline-text-4" id="text-org53fa407">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">recover_after</span>(10))
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="org3a1eb1d"></a>Crash randomly with probability  <code>P</code>: <br></br> <div class="outline-text-4" id="text-org3a1eb1d">
- <div class="org-src-container">
- <pre class="src src-erlang">? <span style="color: #8ae234;">inject_crash</span>(...,  <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1))
-</pre>
-</div>
-</div>
-</li>
-
- <li> <a id="orgc3e9b30"></a>Crash periodically: <br></br> <div class="outline-text-4" id="text-orgc3e9b30">
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>: <span style="color: #8ae234; font-weight: bold;">periodic_crash</span>(
-   <span style="color: #eeeeaa;">_Period</span> = 10,  <span style="color: #eeeeaa;">_DutyCycle</span> = 0.5,  <span style="color: #eeeeaa;">_Phase</span> =  <span style="color: #8ae234; font-weight: bold;">math</span>: <span style="color: #8ae234; font-weight: bold;">pi</span>())
-</pre>
-</div>
-</div>
-</li>
-</ul></div>
-
- <div id="outline-container-orgcb75287" class="outline-3">
- <h3 id="orgcb75287">Manipulating process schedulings</h3>
- <div class="outline-text-3" id="text-orgcb75287">
- <ul class="org-ul"> <li>Sometimes it is necessary to test a certain process scheduling</li>
-
- <li>Imagine working on a bugfix using TDD-style</li>
-
- <li>For example, normally effect  <code>foo</code> occurs after effect  <code>bar</code>, and everything works.
-But in rare cases the opposite happens, and the bug occurs</li>
-
- <li>Snabbkaffe can manipulate process schedulings to some extend:</li>
-</ul> <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">run stage...</span>
-? <span style="color: #8ae234;">force_ordering</span>(#{? <span style="color: #8ae234;">snk_kind</span> := bar}, #{? <span style="color: #8ae234;">snk_kind</span> := foo})
-</pre>
-</div>
-
- <p>
-(It also supports guards)
-</p>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org7b15a6d" class="outline-2">
- <h2 id="org7b15a6d">Using snabbkaffe as a benchmark library</h2>
- <div class="outline-text-2" id="text-org7b15a6d">
-</div>
- <div id="outline-container-orga9085fa" class="outline-3">
- <h3 id="orga9085fa">Disclaimer</h3>
- <div class="outline-text-3" id="text-orga9085fa">
- <ul class="org-ul"> <li>This usecase is a secondary, and quite rudimentary. Don't expect much</li>
- <li>It lacks many features of proper benchmarking libraries, such as
- <ul class="org-ul"> <li>Warmup</li>
- <li>Advanced statistical analysis, e.g. outlier detection</li>
-</ul></li>
-</ul></div>
-</div>
-
- <div id="outline-container-org34bfdb3" class="outline-3">
- <h3 id="org34bfdb3">Reporting metrics</h3>
- <div class="outline-text-3" id="text-org34bfdb3">
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report a single scalar datapoint:</span>
- <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stat</span>(scalar_metric_name,  <span style="color: #eeeeaa;">Value</span>),
- <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report a single datapoint with X coord:</span>
- <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stat</span>(metric_name,  <span style="color: #eeeeaa;">X</span>,  <span style="color: #eeeeaa;">Value</span>),
- <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report multiple scalar datapoints:</span>
- <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name, [ <span style="color: #eeeeaa;">Val1</span>,  <span style="color: #eeeeaa;">Val2</span>, ...]),
- <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Report multiple datapoints with X coord:</span>
- <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name,  <span style="color: #eeeeaa;">X</span>, [ <span style="color: #eeeeaa;">Val1</span>,  <span style="color: #eeeeaa;">Val2</span>, ...])
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org4b5eb0f" class="outline-3">
- <h3 id="org4b5eb0f">Using spans to analyze performance</h3>
- <div class="outline-text-3" id="text-org4b5eb0f">
- <p>
- <code>push_stats</code> function also works together with  <code>?find_pairs</code> macro:
-</p>
- <div class="org-src-container">
- <pre class="src src-erlang">Pairs = ? <span style="color: #8ae234;">find_pairs</span>( #{ ? <span style="color: #8ae234;">snk_span</span> := start
-                      , ? <span style="color: #8ae234;">snk_kind</span> := foo
-                      , pid       :=  <span style="color: #eeeeaa;">_Pid</span>
-                      }
-                   , #{ ? <span style="color: #8ae234;">snk_span</span> := {complete,  <span style="color: #eeeeaa;">_</span>}
-                      , ? <span style="color: #8ae234;">snk_kind</span> := foo
-                      , pid       :=  <span style="color: #eeeeaa;">_Pid</span>
-                      }
-                   ),
- <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">push_stats</span>(metric_name, [ <span style="color: #eeeeaa;">X</span>,]  <span style="color: #eeeeaa;">Pairs</span>)
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org6440a7b" class="outline-3">
- <h3 id="org6440a7b">Analyzing the results</h3>
- <div class="outline-text-3" id="text-org6440a7b">
- <p>
-Use the following function in the end of check stage:
-</p>
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>: <span style="color: #8ae234; font-weight: bold;">analyze_statistics</span>()
-</pre>
-</div>
-
- <p>
-It will print the results in the console:
-</p>
-
- <pre class="example" id="org612836d">
-Mean scalar_metric_name: 10.0
-
-Statisitics of metric_name
-100.479087 ^                                       *
-           |                         *
-           |                   *
-           |
-           |            *
-           |      *
-         0 +---------------------------------------->
-           0                                     1100
-</pre>
-</div>
-</div>
-</div>
-
- <div id="outline-container-orgcf01b3a" class="outline-2">
- <h2 id="orgcf01b3a">Conclusion</h2>
- <div class="outline-text-2" id="text-orgcf01b3a">
-</div>
- <div id="outline-container-org3805086" class="outline-3">
- <h3 id="org3805086">Useful links</h3>
- <div class="outline-text-3" id="text-org3805086">
- <p>
- <a href="https://github.com/kafka4beam/snabbkaffe">https://github.com/kafka4beam/snabbkaffe</a>
-</p>
-
- <p>
-The library is being actively developed.
-</p>
-
- <p>
-Suggestions, bug reports and patches are welcome!
-</p>
-</div>
-
- <ul class="org-ul"> <li> <a id="org5c3c730"></a>Snabbkaffe in action <br></br> <div class="outline-text-4" id="text-org5c3c730">
- <p>
-Feel free to use as an example (clickable links):
-</p>
-
- <ul class="org-ul"> <li> <a href="https://github.com/kafka4beam/brod/blob/master/test/brod_group_subscriber_SUITE.erl">brod</a></li>
-
- <li> <a href="https://github.com/kafka4beam/kflow/tree/master/test">kflow</a></li>
-
- <li> <a href="https://github.com/k32/ekka/blob/master/test/ekka_mnesia_SUITE.erl">ekka</a></li>
-
- <li> <a href="https://github.com/emqx/emqx/">EMQ X</a></li>
-</ul></div>
-</li>
-</ul></div>
-</div>
-</div>]]></description>
-  <link>https://blog.erlang.moe/2021-04-25-snabbkaffe-slides.html</link>
-  <guid isPermaLink="false">https://blog.erlang.moe/2021-04-25-snabbkaffe-slides.html</guid>
-  <pubDate>lör, 15 maj 2021 17:54:00 +0200</pubDate>
-</item>
-<item>
-  <title>Mnesia internals</title>
-  <description><![CDATA[<div id="content">
-
- <p>
-I've been studying Mnesia internals lately, and I figured I may start publishing my scattered notes.
-I will keep updating this post with more details.
-</p>
-
- <p>
-Disclaimer: I am not an OTP dev, and not a mnesia dev.
-Anything that will be posted here will be derived from reading the code.
-</p>
-
- <div id="outline-container-orgcbf7699" class="outline-2">
- <h2 id="orgcbf7699">Transaction</h2>
- <div class="outline-text-2" id="text-orgcbf7699">
- <p>
-Transaction fun runs in the same process that calls  <code>mnesia:transaction</code> function.
-Most of the commit coordination work is also done in the caller process.
-This helps mnesia scale.
-</p>
-
-
- <div id="org79a822f" class="figure">
- <p> <object type="image/svg+xml" data="mnesia_trans.svg" class="org-svg">
-Sorry, your browser does not support SVG.</object>
-</p>
-</div>
-</div>
-
- <div id="outline-container-orgce52341" class="outline-4">
- <h4 id="orgce52341">What's inside mnesia_activity_state?</h4>
- <div class="outline-text-4" id="text-orgce52341">
- <p>
- <code>mnesia_activity_state</code> is a process dictionary variable in the transaction process.
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({bar, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
-....
-
-{mnesia,
- # <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 13, pid = <0.125.0>},
- # <span style="color: #8ae234; font-weight: bold;">tidstore</span>{store = #Ref<0.3426409509.1642725377.222071>,
-           up_stores = [],
-           level = 1
-           }}
-</pre>
-</div>
-
- <p>
-Counter is the Lamport clock (kept by  <code>mnesia_tm</code> process)  <i>at the beginning</i> of the transaction.
-</p>
-</div>
-</div>
-
- <div id="outline-container-orgaee7045" class="outline-4">
- <h4 id="orgaee7045">What's inside the tidstore table?</h4>
- <div class="outline-text-4" id="text-orgaee7045">
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({bar, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
-....
-
-
-[{{bar,1},{bar,1,2},write},
- {{foo,3},{foo,3,3}, write},
- {{locks,foo,3}, write},
- {{locks,bar,1}, write},
- {nodes,  <span style="color: #ad7fa8; font-style: italic;">'foo@me-emq'</span>},
- {nodes,  <span style="color: #ad7fa8; font-style: italic;">'bar@me-emq'</span>}]
-</pre>
-</div>
-</div>
-</div>
-</div>
-
- <div id="outline-container-orgb5dcd8f" class="outline-2">
- <h2 id="orgb5dcd8f"> <span class="todo TODO">TODO</span> Commit process in detail</h2>
- <div class="outline-text-2" id="text-orgb5dcd8f">
- <p>
-Commit procedure also mostly happens in the caller process.
-This process acts as the coordinator.
-</p>
-
-
- <div id="org6fea9ce" class="figure">
- <p> <object type="image/svg+xml" data="mnesia_subscr.svg" class="org-svg">
-Sorry, your browser does not support SVG.</object>
-</p>
-</div>
-</div>
-
- <div id="outline-container-org964b53b" class="outline-3">
- <h3 id="org964b53b">Arrange</h3>
- <div class="outline-text-3" id="text-org964b53b">
- <p>
-Arrange function is pretty convoluted.
-Thankfully, it only uses the local data from the transaction store and the schema.
-It creates a tuple of the following type:
-</p>
-
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
-....
-
-{2,
- # <span style="color: #8ae234; font-weight: bold;">prep</span>{protocol = sym_trans,
-       records = [# <span style="color: #8ae234; font-weight: bold;">commit</span>{node =  <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,
-                          decision = presume_commit,
-                          ram_copies = [{{foo,1},{foo,1,2},write},
-                                        {{foo,3},{foo,3,3},write}],
-                          disc_copies = [],disc_only_copies = [],ext = [],
-                          schema_ops = []},
-                  # <span style="color: #8ae234; font-weight: bold;">commit</span>{node =  <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,decision = presume_commit,
-                          ram_copies = [{{foo,1},{foo,1,2},write},
-                                        {{foo,3},{foo,3,3},write}],
-                          disc_copies = [],disc_only_copies = [],ext = [],
-                          schema_ops = []}],
-       prev_tab = foo,
-       prev_types = [{ <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,ram_copies},
-                     { <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,ram_copies}],
-       prev_snmp = [],
-       types = [{ <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,ram_copies},
-                { <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,ram_copies}],
-       majority = [],
-       sync = false}}
-</pre>
-</div>
-
- <p>
-The first element is the number of write/delete ops in the transaction.
-This number is used to determine whether the transaction is r/o or r/w.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org8928982" class="outline-3">
- <h3 id="org8928982">What is stored in the mnesia_tm's state?</h3>
- <div class="outline-text-3" id="text-org8928982">
- <div class="org-src-container">
- <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
-....
-
-# <span style="color: #8ae234; font-weight: bold;">state</span>{
-    coordinators = {0,nil},
-    participants =  <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Note: this field is a `</span> <span style="color: #729fcf; font-weight: bold;">gb_tree</span> <span style="color: #888a85;">'. So don't mind stuff in the outer tuple</span>
-        {1,
-         {# <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 32,pid = <11304.125.0>},
-          # <span style="color: #8ae234; font-weight: bold;">participant</span>{
-              tid = # <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 32,pid = <11304.125.0>},
-              pid = nopid,
-              commit =
-                  # <span style="color: #8ae234; font-weight: bold;">commit</span>{
-                      node =  <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,decision = presume_commit,
-                      ram_copies =
-                          [{{foo,1},{foo,1,2},write},{{foo,3},{foo,3,3},write}],
-                      disc_copies = [],disc_only_copies = [],ext = [],
-                      schema_ops = []},
-              disc_nodes = [],
-              ram_nodes = [ <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>, <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>],
-              protocol = sym_trans},
-          nil,nil}},
-    supervisor = <0.99.0>,blocked_tabs = [],dirty_queue = [],
-    fixed_tabs = []
-  }
-</pre>
-</div>
-</div>
-</div>
-</div>
-
-
- <div id="outline-container-orga48c1ac" class="outline-2">
- <h2 id="orga48c1ac"> <span class="todo TODO">TODO</span> Transactional reads and writes</h2>
- <div class="outline-text-2" id="text-orga48c1ac">
-
- <div id="org8be5e59" class="figure">
- <p> <object type="image/svg+xml" data="mnesia_simplified.svg" class="org-svg">
-Sorry, your browser does not support SVG.</object>
-</p>
-</div>
-</div>
-</div>
-
- <div id="outline-container-org9f0f54b" class="outline-2">
- <h2 id="org9f0f54b"> <span class="todo TODO">TODO</span> Locker</h2>
-</div>
-
- <div id="outline-container-org3c41b41" class="outline-2">
- <h2 id="org3c41b41"> <span class="todo TODO">TODO</span> Schema</h2>
-</div>
-
- <div id="outline-container-org81c46e3" class="outline-2">
- <h2 id="org81c46e3"> <span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
-</div>
-
- <div id="outline-container-org5409b06" class="outline-2">
- <h2 id="org5409b06"> <span class="todo TODO">TODO</span> Scalability</h2>
- <div class="outline-text-2" id="text-org5409b06">
- <p>
-As should be evident from the above diagram, transaction latency is expected to grow when the number of nodes in the cluster grows.
-Indeed, we observed this effect in the test with the help of  <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
-</p>
-</div>
-</div>
-</div>]]></description>
-  <link>https://blog.erlang.moe/2021-04-26-mnesia.html</link>
-  <guid isPermaLink="false">https://blog.erlang.moe/2021-04-26-mnesia.html</guid>
-  <pubDate>lör, 15 maj 2021 17:54:00 +0200</pubDate>
-</item>
-<item>
-  <title>Why I use GNU Emacs</title>
-  <description><![CDATA[<div id="content">
-
- <p>
-I spend most of my productive time in GNU Emacs. I had used Visual
-Studio, Eclipse and Vim before I fully converted and never looked
-back. In this post I am going to explain why it was a pragmatic
-choice, and why you also need to give this old editor a try.
-</p>
-
- <div id="outline-container-org" class="outline-2">
- <h2 id="org"> <span class="section-number-2">1</span> Learning Emacs shortcuts is a great investment</h2>
- <div class="outline-text-2" id="text-1">
- <p>
-Emacs shortcuts are ubiquitous in Linux. Most interactive programs
-such as  <code>bash</code>,  <code>busybox sh</code> and  <code>grub2</code> support a few essential Emacs
-shortcuts. Learning them improved my command line-fu tremendously, now
-that I need to keep only one set of shortcuts in the muscle memory.
-</p>
-
- <p>
-Just to be clear, I think Vim is the king of plain text editing. I
-still miss being able to type something like  <code>s2ge</code> in command mode to
-delete everything up to second letter  <code>e</code> after the cursor, for
-example. Some advanced shells, such as  <code>zsh</code>, support vi mode as
-well. But I have yet to see a single production server using zsh as
-the default shell, let alone in vi mode. So, if you intend to work
-with hosts other than the localhost, most likely you won't have this
-luxury.
-</p>
-
- <p>
-By the way, this is why I don't recommend remapping the default key
-combinations and stick to the defaults as much as possible.
-</p>
-</div>
-</div>
-
- <div id="outline-container-org" class="outline-2">
- <h2 id="org"> <span class="section-number-2">2</span> Emacs lets you explore new and obscure programming languages</h2>
- <div class="outline-text-2" id="text-2">
- <p>
-Most arguments presented in this section are applicable to any
-powerful text editor.    <a href="https://blog.osteele.com/2004/11/ides">The IDE divide</a> article:
-</p>
-
- <blockquote>
- <p>
-The developer world is divided into two camps. Language mavens wax
-rhapsodic about the power of higher-level programming — first-class
-functions, staged programming, AOP, MOPs, and reflection. Tool mavens
-are skilled at the use of integrated build and debug tools, integrated
-documentation, code completion, refactoring, and code
-comprehension. Language mavens tend to use a text editor such as emacs
-or vim — these editors are more likely to work for new languages. Tool
-mavens tend to use IDEs such as Visual Studio, Eclipse, or IntelliJ,
-that integrate a variety of development tools
-</p>
-</blockquote>
-
- <p>
-In the early days, I had the following checklist of programming
-language worthiness:
-</p>
-
- <ol class="org-ol"> <li>The language should have a good IDE</li>
- <li>It should have curly braces, because this is what makes language
-serious</li>
-</ol> <p>
-Thankfully,
-</p>
-</div>
-</div>
-
- <div id="outline-container-org" class="outline-2">
- <h2 id="org"> <span class="section-number-2">3</span> elisp is a nicely balanced scripting language</h2>
- <div class="outline-text-2" id="text-3">
- <p>
-Fun fact: I switched to Emacs after learning vim well enough to start
-writing my own extensions.
-</p>
-
- <p>
-Designing a Turing-complete programming language is extremely easy,
-but making a consistent, ergonomic language with orthogonal sets of
-features is extremely hard. That's why accidentally esoteric
-programming languages like vimscript and LAMMPS script exist, and they
-are pain to use. On the other hand, using a heavy-weight and verbose
-programming language such as Java
-</p>
-</div>
-</div>
-
- <div id="outline-container-org" class="outline-2">
- <h2 id="org"> <span class="section-number-2">4</span> Org-mode</h2>
-</div>
-</div>]]></description>
-  <link>https://blog.erlang.moe/2020-11-21-gnu-emacs.html</link>
-  <guid isPermaLink="false">https://blog.erlang.moe/2020-11-21-gnu-emacs.html</guid>
-  <pubDate>lör, 21 nov 2020 01:00:00 +0100</pubDate>
+  <pubDate>fre, 11 okt 2019 02:00:00 +0200</pubDate>
 </item>
 </channel>
 </rss>

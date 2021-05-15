@@ -3,7 +3,6 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2021-05-15 lör 17:54 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>How to troubleshoot anything without a clue</title>
@@ -43,13 +42,13 @@ approach a large, unfamiliar code base? Some techniques described
 below will help to navigate through the unknown code more quickly.
 </p>
 
-<div id="outline-container-orgfc8d7bb" class="outline-2">
-<h2 id="orgfc8d7bb">Essential dos and don'ts</h2>
-<div class="outline-text-2" id="text-orgfc8d7bb">
+<div id="outline-container-org5559d68" class="outline-2">
+<h2 id="org5559d68">Essential dos and don'ts</h2>
+<div class="outline-text-2" id="text-org5559d68">
 </div>
-<div id="outline-container-org18c4f92" class="outline-3">
-<h3 id="org18c4f92">Don't mess with the production</h3>
-<div class="outline-text-3" id="text-org18c4f92">
+<div id="outline-container-org86af77a" class="outline-3">
+<h3 id="org86af77a">Don't mess with the production</h3>
+<div class="outline-text-3" id="text-org86af77a">
 <p>
 First and foremost: don't use debug tools in the production
 environment. Debuggers or excessive logging put a lot of stress on the
@@ -76,9 +75,9 @@ dies. Another person won't react as quickly.
 </div>
 </div>
 
-<div id="outline-container-org0fc4607" class="outline-3">
-<h3 id="org0fc4607">Syslog is your debugger</h3>
-<div class="outline-text-3" id="text-org0fc4607">
+<div id="outline-container-org4c0ef4e" class="outline-3">
+<h3 id="org4c0ef4e">Syslog is your debugger</h3>
+<div class="outline-text-3" id="text-org4c0ef4e">
 <p>
 Learn how to debug without debugger. "Printf debugging" is considered
 bad practice by some&#x2026; Lies. Whoever tells you that, wants to sell
@@ -101,9 +100,9 @@ logstash/elasticsearch, Splunk, etc. in the production</li>
 </div>
 </div>
 
-<div id="outline-container-org34fb64d" class="outline-3">
-<h3 id="org34fb64d">Estimate urgency</h3>
-<div class="outline-text-3" id="text-org34fb64d">
+<div id="outline-container-org2a212dd" class="outline-3">
+<h3 id="org2a212dd">Estimate urgency</h3>
+<div class="outline-text-3" id="text-org2a212dd">
 <p>
 Impact of software issues varies from "batch job is delayed, and
 quality of service is slowly declining" to "company is losing <code>$$$$/s</code>
@@ -113,9 +112,9 @@ troubleshooting techniques become appropriate.
 </div>
 </div>
 
-<div id="outline-container-org8b92158" class="outline-3">
-<h3 id="org8b92158">Have they tried turning it off and on?</h3>
-<div class="outline-text-3" id="text-org8b92158">
+<div id="outline-container-org3575206" class="outline-3">
+<h3 id="org3575206">Have they tried turning it off and on?</h3>
+<div class="outline-text-3" id="text-org3575206">
 <p>
 Don't underestimate the unreasonable effectiveness of
 power-cycling. The ops team needs the run books describing how (and
@@ -124,9 +123,9 @@ when) to restart the misbehaving node.
 </div>
 </div>
 
-<div id="outline-container-org30c4cbc" class="outline-3">
-<h3 id="org30c4cbc">Don't try to understand how things work</h3>
-<div class="outline-text-3" id="text-org30c4cbc">
+<div id="outline-container-org2221b6b" class="outline-3">
+<h3 id="org2221b6b">Don't try to understand how things work</h3>
+<div class="outline-text-3" id="text-org2221b6b">
 <p>
 &#x2026;and focus on finding why they <i>don't work</i>.
 </p>
@@ -157,13 +156,13 @@ surgery without a clue.
 </div>
 </div>
 
-<div id="outline-container-org09cf78a" class="outline-2">
-<h2 id="org09cf78a">Advanced techniques</h2>
-<div class="outline-text-2" id="text-org09cf78a">
+<div id="outline-container-orgbb463b6" class="outline-2">
+<h2 id="orgbb463b6">Advanced techniques</h2>
+<div class="outline-text-2" id="text-orgbb463b6">
 </div>
-<div id="outline-container-org6c94ab3" class="outline-3">
-<h3 id="org6c94ab3">Differential troubleshooting</h3>
-<div class="outline-text-3" id="text-org6c94ab3">
+<div id="outline-container-org2f61f65" class="outline-3">
+<h3 id="org2f61f65">Differential troubleshooting</h3>
+<div class="outline-text-3" id="text-org2f61f65">
 <p>
 I find this technique absolutely essential for dealing with fires in
 the companies' attics. It is simple, but exceedingly efficient. In
@@ -199,9 +198,9 @@ fruitless, because this code path is <i>most likely</i> correct.
 </div>
 </div>
 
-<div id="outline-container-orgcd1435d" class="outline-3">
-<h3 id="orgcd1435d">Bisection</h3>
-<div class="outline-text-3" id="text-orgcd1435d">
+<div id="outline-container-org0c24c30" class="outline-3">
+<h3 id="org0c24c30">Bisection</h3>
+<div class="outline-text-3" id="text-org0c24c30">
 <p>
 Typically requests have to travel through lots of individual services,
 message brokers, functions and layers of abstraction. As usual,
@@ -214,9 +213,9 @@ there?
 </div>
 </div>
 
-<div id="outline-container-org7d7e9dd" class="outline-3">
-<h3 id="org7d7e9dd">Surprisal maximization</h3>
-<div class="outline-text-3" id="text-org7d7e9dd">
+<div id="outline-container-orgd464f69" class="outline-3">
+<h3 id="orgd464f69">Surprisal maximization</h3>
+<div class="outline-text-3" id="text-orgd464f69">
 <p>
 Wikipedia gives the following definition of surprisal:
 </p>
@@ -281,17 +280,17 @@ I hope this example makes the idea pretty clear.
 </div>
 </div>
 
-<div id="outline-container-org92af0de" class="outline-2">
-<h2 id="org92af0de">Tools</h2>
-<div class="outline-text-2" id="text-org92af0de">
+<div id="outline-container-orgb54829d" class="outline-2">
+<h2 id="orgb54829d">Tools</h2>
+<div class="outline-text-2" id="text-orgb54829d">
 <p>
 (To be extended)
 </p>
 </div>
 
-<div id="outline-container-org92176f2" class="outline-3">
-<h3 id="org92176f2">Log index</h3>
-<div class="outline-text-3" id="text-org92176f2">
+<div id="outline-container-org3df4080" class="outline-3">
+<h3 id="org3df4080">Log index</h3>
+<div class="outline-text-3" id="text-org3df4080">
 <p>
 Ideally, all logs should be collected in one place and
 indexed. Logstash/elasticsearch/Kibana stack or Splunk are commonly
@@ -300,9 +299,9 @@ used for this.
 </div>
 </div>
 
-<div id="outline-container-orgfd04092" class="outline-3">
-<h3 id="orgfd04092">Ag</h3>
-<div class="outline-text-3" id="text-orgfd04092">
+<div id="outline-container-orgca96220" class="outline-3">
+<h3 id="orgca96220">Ag</h3>
+<div class="outline-text-3" id="text-orgca96220">
 <p>
 <a href="https://github.com/ggreer/the_silver_searcher">https://github.com/ggreer/the_silver_searcher</a> This tool helps to
 navigate through the code, and it's blazing-fast (&gt;100 kLOC project?
@@ -311,9 +310,9 @@ No problem.) I mostly use it via <code>ag</code> Emacs plugin.
 </div>
 </div>
 
-<div id="outline-container-org2d3355a" class="outline-3">
-<h3 id="org2d3355a">Source code index</h3>
-<div class="outline-text-3" id="text-org2d3355a">
+<div id="outline-container-org73746fc" class="outline-3">
+<h3 id="org73746fc">Source code index</h3>
+<div class="outline-text-3" id="text-org73746fc">
 <p>
 Github, bitbucket and other source control servers index all the
 code. Code search feature is essential for finding where error
@@ -323,27 +322,27 @@ troubleshooting. Don't forget to use it.
 </div>
 </div>
 
-<div id="outline-container-org227e103" class="outline-3">
-<h3 id="org227e103">Perf</h3>
-<div class="outline-text-3" id="text-org227e103">
+<div id="outline-container-orgfee2f8d" class="outline-3">
+<h3 id="orgfee2f8d">Perf</h3>
+<div class="outline-text-3" id="text-orgfee2f8d">
 <p>
 Perf is a tool that is not <i>too dangerous</i> to use in production.
 </p>
 </div>
 </div>
 
-<div id="outline-container-orge352ae4" class="outline-3">
-<h3 id="orge352ae4">Metrics</h3>
-<div class="outline-text-3" id="text-orge352ae4">
+<div id="outline-container-org96ce617" class="outline-3">
+<h3 id="org96ce617">Metrics</h3>
+<div class="outline-text-3" id="text-org96ce617">
 <p>
 Of course you should have them.
 </p>
 </div>
 </div>
 
-<div id="outline-container-org4b6ae25" class="outline-3">
-<h3 id="org4b6ae25">strace/ltrace</h3>
-<div class="outline-text-3" id="text-org4b6ae25">
+<div id="outline-container-org23e22ce" class="outline-3">
+<h3 id="org23e22ce">strace/ltrace</h3>
+<div class="outline-text-3" id="text-org23e22ce">
 <p>
 I would not recommend running them in production. But these tools are
 indispensable for local debugging.
@@ -351,9 +350,9 @@ indispensable for local debugging.
 </div>
 </div>
 
-<div id="outline-container-org41dd460" class="outline-3">
-<h3 id="org41dd460">tcpdump</h3>
-<div class="outline-text-3" id="text-org41dd460">
+<div id="outline-container-orgd979d58" class="outline-3">
+<h3 id="orgd979d58">tcpdump</h3>
+<div class="outline-text-3" id="text-orgd979d58">
 <p>
 Tcpdump is more or less safe to use in production (YMMV), but you must
 filter by interface and port. Collect data to a local file and open it
@@ -364,9 +363,9 @@ unless you want to explore limits of infinite recursion.
 </div>
 </div>
 
-<div id="outline-container-orgcbdcd7e" class="outline-3">
-<h3 id="orgcbdcd7e">system_monitor</h3>
-<div class="outline-text-3" id="text-orgcbdcd7e">
+<div id="outline-container-orgbd26dd8" class="outline-3">
+<h3 id="orgbd26dd8">system_monitor</h3>
+<div class="outline-text-3" id="text-orgbd26dd8">
 <p>
 If your system is written in Erlang or Elixir, consider using
 <a href="https://github.com/klarna-incubator/system_monitor">system_monitor</a> app. It was of tremendous help during many incidents.
@@ -374,9 +373,9 @@ If your system is written in Erlang or Elixir, consider using
 </div>
 </div>
 
-<div id="outline-container-org37c5991" class="outline-3">
-<h3 id="org37c5991">Emacs "M-x occur" command</h3>
-<div class="outline-text-3" id="text-org37c5991">
+<div id="outline-container-org2f29aeb" class="outline-3">
+<h3 id="org2f29aeb">Emacs "M-x occur" command</h3>
+<div class="outline-text-3" id="text-org2f29aeb">
 <p>
 Emacs comes with a handy command called <code>occur</code>. It does, quote:
 </p>
@@ -395,9 +394,9 @@ Which is very useful for analyzing log files.
 </div>
 </div>
 
-<div id="outline-container-org23fbb53" class="outline-2">
-<h2 id="org23fbb53">Have zero trust in humanity&#xa0;&#xa0;&#xa0;<span class="tag"><span class="rant">rant</span></span></h2>
-<div class="outline-text-2" id="text-org23fbb53">
+<div id="outline-container-orgbb49472" class="outline-2">
+<h2 id="orgbb49472">Have zero trust in humanity&#xa0;&#xa0;&#xa0;<span class="tag"><span class="rant">rant</span></span></h2>
+<div class="outline-text-2" id="text-orgbb49472">
 <p>
 If you find yourself dismissing some idea because your inner voice
 says "well, this would be too obvious" or "no one could do something
@@ -433,9 +432,9 @@ one may think.
 </div>
 </div>
 
-<div id="outline-container-org97ce66f" class="outline-2">
-<h2 id="org97ce66f">Don't panic</h2>
-<div class="outline-text-2" id="text-org97ce66f">
+<div id="outline-container-orgf7c827a" class="outline-2">
+<h2 id="orgf7c827a">Don't panic</h2>
+<div class="outline-text-2" id="text-orgf7c827a">
 <p>
 When nothing works, try to get some company. The worst thing that can
 happen is when you panic and stop trying new ideas. This happens even
@@ -446,9 +445,9 @@ productive.
 </div>
 </div>
 
-<div id="outline-container-orga9c1bda" class="outline-2">
-<h2 id="orga9c1bda">Nightmare difficulty: "Zero-knowledge troubleshooting"</h2>
-<div class="outline-text-2" id="text-orga9c1bda">
+<div id="outline-container-orgd339b45" class="outline-2">
+<h2 id="orgd339b45">Nightmare difficulty: "Zero-knowledge troubleshooting"</h2>
+<div class="outline-text-2" id="text-orgd339b45">
 <p>
 Any bug is a cakewalk, when it concerns a system that you actively
 develop. But I bet your company has Great Old Ones: systems that work
@@ -481,9 +480,9 @@ office. Consider tactical retreat in the direction of job market.
 </div>
 </div>
 
-<div id="outline-container-orgb54f73f" class="outline-2">
-<h2 id="orgb54f73f">Epilogue</h2>
-<div class="outline-text-2" id="text-orgb54f73f">
+<div id="outline-container-org74c9689" class="outline-2">
+<h2 id="org74c9689">Epilogue</h2>
+<div class="outline-text-2" id="text-org74c9689">
 <p>
 This knowledge may ruin your life. If you master these techniques,
 don't let anyone know, or else you may find yourself putting out
@@ -534,5 +533,8 @@ Especially when the code is written by a person who read
 
 </div>
 </div></div>
+<div id="postamble" class="status">
+<p class="date">Date: 2020-11-08</p>
+</div>
 </body>
 </html>

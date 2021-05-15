@@ -3,7 +3,6 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2021-05-15 lör 17:54 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Mnesia internals</title>
@@ -29,9 +28,9 @@ Disclaimer: I am not an OTP dev, and not a mnesia dev.
 Anything that will be posted here will be derived from reading the code.
 </p>
 
-<div id="outline-container-orgcbf7699" class="outline-2">
-<h2 id="orgcbf7699">Transaction</h2>
-<div class="outline-text-2" id="text-orgcbf7699">
+<div id="outline-container-org8236502" class="outline-2">
+<h2 id="org8236502">Transaction</h2>
+<div class="outline-text-2" id="text-org8236502">
 <p>
 Transaction fun runs in the same process that calls <code>mnesia:transaction</code> function.
 Most of the commit coordination work is also done in the caller process.
@@ -39,16 +38,16 @@ This helps mnesia scale.
 </p>
 
 
-<div id="org79a822f" class="figure">
+<div id="org85fb14e" class="figure">
 <p><object type="image/svg+xml" data="mnesia_trans.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgce52341" class="outline-4">
-<h4 id="orgce52341">What's inside mnesia_activity_state?</h4>
-<div class="outline-text-4" id="text-orgce52341">
+<div id="outline-container-orgce23908" class="outline-4">
+<h4 id="orgce23908">What's inside mnesia_activity_state?</h4>
+<div class="outline-text-4" id="text-orgce23908">
 <p>
 <code>mnesia_activity_state</code> is a process dictionary variable in the transaction process.
 </p>
@@ -72,9 +71,9 @@ Counter is the Lamport clock (kept by <code>mnesia_tm</code> process) <i>at the 
 </div>
 </div>
 
-<div id="outline-container-orgaee7045" class="outline-4">
-<h4 id="orgaee7045">What's inside the tidstore table?</h4>
-<div class="outline-text-4" id="text-orgaee7045">
+<div id="outline-container-orgdcfa492" class="outline-4">
+<h4 id="orgdcfa492">What's inside the tidstore table?</h4>
+<div class="outline-text-4" id="text-orgdcfa492">
 <div class="org-src-container">
 <pre class="src src-erlang"><span style="color: #8ae234; font-weight: bold;">mnesia</span>:<span style="color: #8ae234; font-weight: bold;">transaction</span>(<span style="color: #729fcf; font-weight: bold;">fun</span>() -&gt;<span style="color: #edd400; font-weight: bold; font-style: italic;"> </span><span style="color: #8ae234; font-weight: bold;">mnesia</span>:<span style="color: #8ae234; font-weight: bold;">write</span>({bar, 1, 2}), <span style="color: #8ae234; font-weight: bold;">mnesia</span>:<span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3}) <span style="color: #729fcf; font-weight: bold;">end</span>).
 ....
@@ -92,25 +91,25 @@ Counter is the Lamport clock (kept by <code>mnesia_tm</code> process) <i>at the 
 </div>
 </div>
 
-<div id="outline-container-orgb5dcd8f" class="outline-2">
-<h2 id="orgb5dcd8f"><span class="todo TODO">TODO</span> Commit process in detail</h2>
-<div class="outline-text-2" id="text-orgb5dcd8f">
+<div id="outline-container-orgb0cbda9" class="outline-2">
+<h2 id="orgb0cbda9"><span class="todo TODO">TODO</span> Commit process in detail</h2>
+<div class="outline-text-2" id="text-orgb0cbda9">
 <p>
 Commit procedure also mostly happens in the caller process.
 This process acts as the coordinator.
 </p>
 
 
-<div id="org6fea9ce" class="figure">
+<div id="org255082a" class="figure">
 <p><object type="image/svg+xml" data="mnesia_subscr.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
-<div id="outline-container-org964b53b" class="outline-3">
-<h3 id="org964b53b">Arrange</h3>
-<div class="outline-text-3" id="text-org964b53b">
+<div id="outline-container-orgfa152d4" class="outline-3">
+<h3 id="orgfa152d4">Arrange</h3>
+<div class="outline-text-3" id="text-orgfa152d4">
 <p>
 Arrange function is pretty convoluted.
 Thankfully, it only uses the local data from the transaction store and the schema.
@@ -152,9 +151,9 @@ This number is used to determine whether the transaction is r/o or r/w.
 </div>
 </div>
 
-<div id="outline-container-org8928982" class="outline-3">
-<h3 id="org8928982">What is stored in the mnesia_tm's state?</h3>
-<div class="outline-text-3" id="text-org8928982">
+<div id="outline-container-org6bcba34" class="outline-3">
+<h3 id="org6bcba34">What is stored in the mnesia_tm's state?</h3>
+<div class="outline-text-3" id="text-org6bcba34">
 <div class="org-src-container">
 <pre class="src src-erlang"><span style="color: #8ae234; font-weight: bold;">mnesia</span>:<span style="color: #8ae234; font-weight: bold;">transaction</span>(<span style="color: #729fcf; font-weight: bold;">fun</span>() -&gt;<span style="color: #edd400; font-weight: bold; font-style: italic;"> </span><span style="color: #8ae234; font-weight: bold;">mnesia</span>:<span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}), <span style="color: #8ae234; font-weight: bold;">mnesia</span>:<span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3}) <span style="color: #729fcf; font-weight: bold;">end</span>).
 ....
@@ -188,11 +187,11 @@ This number is used to determine whether the transaction is r/o or r/w.
 </div>
 
 
-<div id="outline-container-orga48c1ac" class="outline-2">
-<h2 id="orga48c1ac"><span class="todo TODO">TODO</span> Transactional reads and writes</h2>
-<div class="outline-text-2" id="text-orga48c1ac">
+<div id="outline-container-org309a3a5" class="outline-2">
+<h2 id="org309a3a5"><span class="todo TODO">TODO</span> Transactional reads and writes</h2>
+<div class="outline-text-2" id="text-org309a3a5">
 
-<div id="org8be5e59" class="figure">
+<div id="orgacaf8af" class="figure">
 <p><object type="image/svg+xml" data="mnesia_simplified.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
@@ -200,27 +199,30 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
-<div id="outline-container-org9f0f54b" class="outline-2">
-<h2 id="org9f0f54b"><span class="todo TODO">TODO</span> Locker</h2>
+<div id="outline-container-org82764aa" class="outline-2">
+<h2 id="org82764aa"><span class="todo TODO">TODO</span> Locker</h2>
 </div>
 
-<div id="outline-container-org3c41b41" class="outline-2">
-<h2 id="org3c41b41"><span class="todo TODO">TODO</span> Schema</h2>
+<div id="outline-container-org6eba189" class="outline-2">
+<h2 id="org6eba189"><span class="todo TODO">TODO</span> Schema</h2>
 </div>
 
-<div id="outline-container-org81c46e3" class="outline-2">
-<h2 id="org81c46e3"><span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
+<div id="outline-container-org4a4b66e" class="outline-2">
+<h2 id="org4a4b66e"><span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
 </div>
 
-<div id="outline-container-org5409b06" class="outline-2">
-<h2 id="org5409b06"><span class="todo TODO">TODO</span> Scalability</h2>
-<div class="outline-text-2" id="text-org5409b06">
+<div id="outline-container-org512fb1c" class="outline-2">
+<h2 id="org512fb1c"><span class="todo TODO">TODO</span> Scalability</h2>
+<div class="outline-text-2" id="text-org512fb1c">
 <p>
 As should be evident from the above diagram, transaction latency is expected to grow when the number of nodes in the cluster grows.
 Indeed, we observed this effect in the test with the help of <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
 </p>
 </div>
 </div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2021-04-26</p>
 </div>
 </body>
 </html>
