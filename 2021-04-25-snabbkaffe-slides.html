@@ -3,6 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
+<!-- 2021-05-15 lör 17:54 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Introduction to Snabbkaffe</title>
@@ -22,13 +23,13 @@
 This is an HTML version of snabbkaffe presentation slides.
 </p>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">1</span> Background and motivation</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-org3cf7a1b" class="outline-2">
+<h2 id="org3cf7a1b">Background and motivation</h2>
+<div class="outline-text-2" id="text-org3cf7a1b">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.1</span> What is snabbkaffe</h3>
-<div class="outline-text-3" id="text-1-1">
+<div id="outline-container-org9596e82" class="outline-3">
+<h3 id="org9596e82">What is snabbkaffe</h3>
+<div class="outline-text-3" id="text-org9596e82">
 <ul class="org-ul">
 <li>Snabbkaffe is a library that allows to test concurrent and distributed systems</li>
 
@@ -43,9 +44,9 @@ This is an HTML version of snabbkaffe presentation slides.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.2</span> Name</h3>
-<div class="outline-text-3" id="text-1-2">
+<div id="outline-container-orgb4296fc" class="outline-3">
+<h3 id="orgb4296fc">Name</h3>
+<div class="outline-text-3" id="text-orgb4296fc">
 <ul class="org-ul">
 <li><code>Snabbkaffe</code> means ``instant coffee'' in Swedish</li>
 
@@ -54,13 +55,13 @@ This is an HTML version of snabbkaffe presentation slides.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.3</span> Nondeterminism</h3>
-<div class="outline-text-3" id="text-1-3">
+<div id="outline-container-org9460bdd" class="outline-3">
+<h3 id="org9460bdd">Nondeterminism</h3>
+<div class="outline-text-3" id="text-org9460bdd">
 </div>
-<ol class="org-ol">
-<li><a id="org"></a>Definitions<br />
-<div class="outline-text-4" id="text-1-3-1">
+<ul class="org-ul">
+<li><a id="org46fcda4"></a>Definitions<br />
+<div class="outline-text-4" id="text-org46fcda4">
 <ul class="org-ul">
 <li><b>Deterministic</b> functions always produce the same output for the same input</li>
 
@@ -69,8 +70,8 @@ This is an HTML version of snabbkaffe presentation slides.
 </div>
 </li>
 
-<li><a id="org"></a>Sources of nondeterminism<br />
-<div class="outline-text-4" id="text-1-3-2">
+<li><a id="org41e2c90"></a>Sources of nondeterminism<br />
+<div class="outline-text-4" id="text-org41e2c90">
 <ul class="org-ul">
 <li>Process schedulings</li>
 
@@ -86,16 +87,16 @@ Nondeterminism is an inherent property of concurrent systems
 </p>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.4</span> Why change the paradigm of testing?</h3>
-<div class="outline-text-3" id="text-1-4">
+<div id="outline-container-orga0b9dab" class="outline-3">
+<h3 id="orga0b9dab">Why change the paradigm of testing?</h3>
+<div class="outline-text-3" id="text-orga0b9dab">
 </div>
-<ol class="org-ol">
-<li><a id="org"></a>Difficulty levels<br />
-<div class="outline-text-4" id="text-1-4-1">
+<ul class="org-ul">
+<li><a id="orga6506dd"></a>Difficulty levels<br />
+<div class="outline-text-4" id="text-orga6506dd">
 <ol class="org-ol">
 <li>Easy: Pure functions</li>
 
@@ -108,8 +109,8 @@ Nondeterminism is an inherent property of concurrent systems
 </div>
 </li>
 
-<li><a id="org"></a>Traditional approach<br />
-<div class="outline-text-4" id="text-1-4-2">
+<li><a id="org3ba8047"></a>Traditional approach<br />
+<div class="outline-text-4" id="text-org3ba8047">
 <ul class="org-ul">
 <li>Traditional approach is sufficient for testing pure functions.
 There are a variety of excellent tools for this, like PropER</li>
@@ -120,12 +121,12 @@ There are a variety of excellent tools for this, like PropER</li>
 </ul>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.5</span> Challenges of testing Erlang applications <i>in situ</i></h3>
-<div class="outline-text-3" id="text-1-5">
+<div id="outline-container-orgda20930" class="outline-3">
+<h3 id="orgda20930">Challenges of testing Erlang applications <i>in situ</i></h3>
+<div class="outline-text-3" id="text-orgda20930">
 <p>
 Erlang partitions the state of the system between processes
 </p>
@@ -146,9 +147,9 @@ Erlang partitions the state of the system between processes
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.6</span> Possible solution to this problem?</h3>
-<div class="outline-text-3" id="text-1-6">
+<div id="outline-container-orgaf39dc9" class="outline-3">
+<h3 id="orgaf39dc9">Possible solution to this problem?</h3>
+<div class="outline-text-3" id="text-orgaf39dc9">
 <p>
 Move away from states and embrace events and their temporal relationships
 </p>
@@ -156,13 +157,13 @@ Move away from states and embrace events and their temporal relationships
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">2</span> Instrumenting the code</h2>
-<div class="outline-text-2" id="text-2">
+<div id="outline-container-orgde21e28" class="outline-2">
+<h2 id="orgde21e28">Instrumenting the code</h2>
+<div class="outline-text-2" id="text-orgde21e28">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.1</span> Tracing macros</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-org274d230" class="outline-3">
+<h3 id="org274d230">Tracing macros</h3>
+<div class="outline-text-3" id="text-org274d230">
 <ol class="org-ol">
 <li>Replace your regular logs with structured logs (the industry is moving towards structured logs anyway)</li>
 
@@ -179,9 +180,9 @@ Move away from states and embrace events and their temporal relationships
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.2</span> Examples</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-org1f33a39" class="outline-3">
+<h3 id="org1f33a39">Examples</h3>
+<div class="outline-text-3" id="text-org1f33a39">
 <div class="org-src-container">
 <pre class="src src-erlang"><span style="color: #888a85;">%% </span><span style="color: #888a85;">Disappears in the release build:</span>
 ?<span style="color: #8ae234;">tp</span>(rlog_replica_import_trans,
@@ -210,9 +211,9 @@ Move away from states and embrace events and their temporal relationships
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.3</span> Distributed tracing</h3>
-<div class="outline-text-3" id="text-2-3">
+<div id="outline-container-org4099fa6" class="outline-3">
+<h3 id="org4099fa6">Distributed tracing</h3>
+<div class="outline-text-3" id="text-org4099fa6">
 <p>
 Forward traces from the remote node:
 </p>
@@ -228,9 +229,9 @@ All features (incl. fault and scheduling injections) will work
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.4</span> Why not using erlang tracing?</h3>
-<div class="outline-text-3" id="text-2-4">
+<div id="outline-container-org6ad3bd3" class="outline-3">
+<h3 id="org6ad3bd3">Why not using erlang tracing?</h3>
+<div class="outline-text-3" id="text-org6ad3bd3">
 <p>
 An often asked question: why not using <code>dbg:tracer</code> or the like?
 </p>
@@ -253,40 +254,40 @@ It was a conscious design choice:
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">3</span> Testing</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-orgacca4b6" class="outline-2">
+<h2 id="orgacca4b6">Testing</h2>
+<div class="outline-text-2" id="text-orgacca4b6">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">3.1</span> Stages of the test</h3>
-<div class="outline-text-3" id="text-3-1">
+<div id="outline-container-orgeec404b" class="outline-3">
+<h3 id="orgeec404b">Stages of the test</h3>
+<div class="outline-text-3" id="text-orgeec404b">
 <p>
 Every testcase is split in two stages:
 </p>
 </div>
 
-<ol class="org-ol">
-<li><a id="org"></a>Run stage<br />
-<div class="outline-text-4" id="text-3-1-1">
+<ul class="org-ul">
+<li><a id="orgbc84a12"></a>Run stage<br />
+<div class="outline-text-4" id="text-orgbc84a12">
 <p>
 where the program runs and emits the event trace
 </p>
 </div>
 </li>
 
-<li><a id="org"></a>Check stage<br />
-<div class="outline-text-4" id="text-3-1-2">
+<li><a id="org326864c"></a>Check stage<br />
+<div class="outline-text-4" id="text-org326864c">
 <p>
 where the trace is collected as a list of Erlang maps and validated against the spec(s)
 </p>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">3.2</span> check_trace macro</h3>
-<div class="outline-text-3" id="text-3-2">
+<div id="outline-container-orgb749967" class="outline-3">
+<h3 id="orgb749967">check_trace macro</h3>
+<div class="outline-text-3" id="text-orgb749967">
 <div class="org-src-container">
 <pre class="src src-erlang"><span style="color: #edd400; font-weight: bold; font-style: italic;">my_test</span>() -&gt;
   ?<span style="color: #8ae234;">check_trace</span>(<span style="color: #729fcf; font-weight: bold;">begin</span>
@@ -308,9 +309,9 @@ where the trace is collected as a list of Erlang maps and validated against the 
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">3.3</span> Waiting for events</h3>
-<div class="outline-text-3" id="text-3-3">
+<div id="outline-container-orga56bcfb" class="outline-3">
+<h3 id="orga56bcfb">Waiting for events</h3>
+<div class="outline-text-3" id="text-orga56bcfb">
 <p>
 It is possible to block run stage until a certain event occurs:
 </p>
@@ -329,9 +330,9 @@ This macro will return immediately as soon as the event happens, so it's more ef
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">3.4</span> Starting an asynchronous action</h3>
-<div class="outline-text-3" id="text-3-4">
+<div id="outline-container-org4ef2e1c" class="outline-3">
+<h3 id="org4ef2e1c">Starting an asynchronous action</h3>
+<div class="outline-text-3" id="text-org4ef2e1c">
 <p>
 <code>?block_until</code> is fine, but it requires timeout tuning.
 What if the same event happened in the past?
@@ -353,9 +354,9 @@ This macro doesn't have to look into the past.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">3.5</span> Integrating with PropER</h3>
-<div class="outline-text-3" id="text-3-5">
+<div id="outline-container-org63ea2f1" class="outline-3">
+<h3 id="org63ea2f1">Integrating with PropER</h3>
+<div class="outline-text-3" id="text-org63ea2f1">
 <p>
 It's not a problem to combine stateless PropER tests with snabbkaffe.
 <code>?check_trace</code> macro can be used inside proper's <code>?FORALL</code> macro.
@@ -383,17 +384,17 @@ Snabbkaffe provides some convenience macros that simplify trace-property-based t
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">3.6</span> Misc. macros</h3>
-<div class="outline-text-3" id="text-3-6">
+<div id="outline-container-org3f4993b" class="outline-3">
+<h3 id="org3f4993b">Misc. macros</h3>
+<div class="outline-text-3" id="text-org3f4993b">
 <p>
 There are a few macros that are not directly related to trace-based testing, but often needed:
 </p>
 </div>
 
-<ol class="org-ol">
-<li><a id="org"></a>?panic<br />
-<div class="outline-text-4" id="text-3-6-1">
+<ul class="org-ul">
+<li><a id="org57a41ef"></a>?panic<br />
+<div class="outline-text-4" id="text-org57a41ef">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">panic</span>(<span style="color: #ad7fa8; font-style: italic;">"Unexpected result"</span>, #{result =&gt; <span style="color: #eeeeaa;">A</span>})
 </pre>
@@ -405,8 +406,8 @@ Throw an error
 </div>
 </li>
 
-<li><a id="org"></a>?retry<br />
-<div class="outline-text-4" id="text-3-6-2">
+<li><a id="org2eb8f2c"></a>?retry<br />
+<div class="outline-text-4" id="text-org2eb8f2c">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">retry</span>(<span style="color: #eeeeaa;">_RetryPeriod</span> = 100, <span style="color: #eeeeaa;">_MaxRetries</span> = 10,
        <span style="color: #8ae234; font-weight: bold;">some_action_that_can_fail</span>())
@@ -419,8 +420,8 @@ Run some code periodically until it succeeds (use as the last resort, when <code
 </div>
 </li>
 
-<li><a id="org"></a>?give_or_take<br />
-<div class="outline-text-4" id="text-3-6-3">
+<li><a id="org375c812"></a>?give_or_take<br />
+<div class="outline-text-4" id="text-org375c812">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">give_or_take</span>(<span style="color: #eeeeaa;">_Expected</span> = 20, <span style="color: #eeeeaa;">_Deviation</span> = 2, <span style="color: #eeeeaa;">Value</span>)
 </pre>
@@ -431,17 +432,17 @@ Check that an integer value is within range
 </p>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">4</span> Basic functions for working with traces</h2>
-<div class="outline-text-2" id="text-4">
+<div id="outline-container-org7681368" class="outline-2">
+<h2 id="org7681368">Basic functions for working with traces</h2>
+<div class="outline-text-2" id="text-org7681368">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">4.1</span> Structure of the trace event</h3>
-<div class="outline-text-3" id="text-4-1">
+<div id="outline-container-org42dd032" class="outline-3">
+<h3 id="org42dd032">Structure of the trace event</h3>
+<div class="outline-text-3" id="text-org42dd032">
 <div class="org-src-container">
 <pre class="src src-erlang">[#{ ?<span style="color: #8ae234;">snk_kind</span> =&gt; foo
   , ?<span style="color: #8ae234;">snk_meta</span> =&gt; #{ domain =&gt; [foo, bar]
@@ -462,9 +463,9 @@ Check that an integer value is within range
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">4.2</span> Structure of the span trace</h3>
-<div class="outline-text-3" id="text-4-2">
+<div id="outline-container-org73c44b9" class="outline-3">
+<h3 id="org73c44b9">Structure of the span trace</h3>
+<div class="outline-text-3" id="text-org73c44b9">
 <div class="org-src-container">
 <pre class="src src-erlang">[#{ ?<span style="color: #8ae234;">snk_kind</span> =&gt; foo
   , ?<span style="color: #8ae234;">snk_meta</span> =&gt; #{ ... }
@@ -485,13 +486,13 @@ Check that an integer value is within range
 </div>
 
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">4.3</span> Filtering the trace</h3>
-<div class="outline-text-3" id="text-4-3">
+<div id="outline-container-org350d463" class="outline-3">
+<h3 id="org350d463">Filtering the trace</h3>
+<div class="outline-text-3" id="text-org350d463">
 </div>
-<ol class="org-ol">
-<li><a id="org"></a>?of_kind macro<br />
-<div class="outline-text-4" id="text-4-3-1">
+<ul class="org-ul">
+<li><a id="orgb7f7f6b"></a>?of_kind macro<br />
+<div class="outline-text-4" id="text-orgb7f7f6b">
 <div class="org-src-container">
 <pre class="src src-erlang">FooEvents = ?<span style="color: #8ae234;">of_kind</span>(foo, <span style="color: #eeeeaa;">Trace</span>)
 </pre>
@@ -504,8 +505,8 @@ Check that an integer value is within range
 </div>
 </li>
 
-<li><a id="org"></a>?of_domain macro<br />
-<div class="outline-text-4" id="text-4-3-2">
+<li><a id="org57510ff"></a>?of_domain macro<br />
+<div class="outline-text-4" id="text-org57510ff">
 <div class="org-src-container">
 <pre class="src src-erlang">EMQXEvents = ?<span style="color: #8ae234;">of_domain</span>([emqx|<span style="color: #eeeeaa;">_</span>], <span style="color: #eeeeaa;">Trace</span>)
 </pre>
@@ -513,8 +514,8 @@ Check that an integer value is within range
 </div>
 </li>
 
-<li><a id="org"></a>?of_node macro<br />
-<div class="outline-text-4" id="text-4-3-3">
+<li><a id="orgf5b6814"></a>?of_node macro<br />
+<div class="outline-text-4" id="text-orgf5b6814">
 <div class="org-src-container">
 <pre class="src src-erlang">NodeFooEvents = ?<span style="color: #8ae234;">of_node</span>(<span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>, <span style="color: #eeeeaa;">Trace</span>)
 </pre>
@@ -522,19 +523,19 @@ Check that an integer value is within range
 </div>
 </li>
 
-<li><a id="org"></a>More complex filtering<br />
-<div class="outline-text-4" id="text-4-3-4">
+<li><a id="org86380b4"></a>More complex filtering<br />
+<div class="outline-text-4" id="text-org86380b4">
 <p>
 Of course, <code>lists:filter</code> and list comprehensions work too
 </p>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">4.4</span> Extracting fields</h3>
-<div class="outline-text-3" id="text-4-4">
+<div id="outline-container-orgf2efb1c" class="outline-3">
+<h3 id="orgf2efb1c">Extracting fields</h3>
+<div class="outline-text-3" id="text-orgf2efb1c">
 <div class="org-src-container">
 <pre class="src src-erlang">[1, 2] = ?<span style="color: #8ae234;">projection</span>(id, ?<span style="color: #8ae234;">of_kind</span>(handle_message, <span style="color: #eeeeaa;">Trace</span>))
 </pre>
@@ -550,13 +551,13 @@ Of course, <code>lists:filter</code> and list comprehensions work too
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">5</span> Event correlations</h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-org435e7f3" class="outline-2">
+<h2 id="org435e7f3">Event correlations</h2>
+<div class="outline-text-2" id="text-org435e7f3">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">5.1</span> ?strict_causality macro</h3>
-<div class="outline-text-3" id="text-5-1">
+<div id="outline-container-orgb13ca95" class="outline-3">
+<h3 id="orgb13ca95">?strict_causality macro</h3>
+<div class="outline-text-3" id="text-orgb13ca95">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">strict_causality</span>( #{?<span style="color: #8ae234;">snk_kind</span> := msg_received, id := <span style="color: #eeeeaa;">_Id</span>}
                  , #{?<span style="color: #8ae234;">snk_kind</span> := msg_processed, id := <span style="color: #eeeeaa;">_Id</span>}
@@ -577,9 +578,9 @@ Return value:
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">5.2</span> ?strict_causality with guard</h3>
-<div class="outline-text-3" id="text-5-2">
+<div id="outline-container-org67dcdb9" class="outline-3">
+<h3 id="org67dcdb9">?strict_causality with guard</h3>
+<div class="outline-text-3" id="text-org67dcdb9">
 <p>
 Suppose we're testing a "base64 server":
 </p>
@@ -595,9 +596,9 @@ Suppose we're testing a "base64 server":
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">5.3</span> ?causality macro</h3>
-<div class="outline-text-3" id="text-5-3">
+<div id="outline-container-org7191dba" class="outline-3">
+<h3 id="org7191dba">?causality macro</h3>
+<div class="outline-text-3" id="text-org7191dba">
 <p>
 Overall, it's the same as <code>?strict_causality</code>, except it doesn't require each ``cause'' to have an ``effect''
 </p>
@@ -613,9 +614,9 @@ Overall, it's the same as <code>?strict_causality</code>, except it doesn't requ
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">5.4</span> Pitfalls</h3>
-<div class="outline-text-3" id="text-5-4">
+<div id="outline-container-org2652aa5" class="outline-3">
+<h3 id="org2652aa5">Pitfalls</h3>
+<div class="outline-text-3" id="text-org2652aa5">
 <p>
 There is a potential problem with ``causality'' macros:
 </p>
@@ -636,9 +637,9 @@ Always wrap <code>?causality</code> and <code>?strict_causality</code> in <code>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">5.5</span> ?find_pairs macro</h3>
-<div class="outline-text-3" id="text-5-5">
+<div id="outline-container-org82f1a29" class="outline-3">
+<h3 id="org82f1a29">?find_pairs macro</h3>
+<div class="outline-text-3" id="text-org82f1a29">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">find_pairs</span>(<span style="color: #eeeeaa;">Strict</span>, <span style="color: #eeeeaa;">MatchCause</span>, <span style="color: #eeeeaa;">MatchEffect</span> [, <span style="color: #eeeeaa;">Guard</span>] , <span style="color: #eeeeaa;">Trace</span>)
 </pre>
@@ -652,9 +653,9 @@ Always wrap <code>?causality</code> and <code>?strict_causality</code> in <code>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">5.6</span> Splitting traces</h3>
-<div class="outline-text-3" id="text-5-6">
+<div id="outline-container-org8971bd0" class="outline-3">
+<h3 id="org8971bd0">Splitting traces</h3>
+<div class="outline-text-3" id="text-org8971bd0">
 <p>
 Often it is useful to split traces to parts before and after some event (for example, restart)
 </p>
@@ -664,9 +665,9 @@ There are a variety of macros for this:
 </p>
 </div>
 
-<ol class="org-ol">
-<li><a id="org"></a>split_at<br />
-<div class="outline-text-4" id="text-5-6-1">
+<ul class="org-ul">
+<li><a id="orgacbb7ed"></a>split_at<br />
+<div class="outline-text-4" id="text-orgacbb7ed">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">split_trace_at</span>(bar, [foo, bar, baz, bar]).
 {[foo], [bar, baz, bar]}.
@@ -675,8 +676,8 @@ There are a variety of macros for this:
 </div>
 </li>
 
-<li><a id="org"></a>splitr<br />
-<div class="outline-text-4" id="text-5-6-2">
+<li><a id="orgd25d465"></a>splitr<br />
+<div class="outline-text-4" id="text-orgd25d465">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">splitr_trace</span>(foo, [1, 2, foo, 1, 2, foo])
 [[1, 2], [foo, 1, 2], [foo]].
@@ -685,8 +686,8 @@ There are a variety of macros for this:
 </div>
 </li>
 
-<li><a id="org"></a>splitl<br />
-<div class="outline-text-4" id="text-5-6-3">
+<li><a id="org85bc3dd"></a>splitl<br />
+<div class="outline-text-4" id="text-org85bc3dd">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">splitl_trace</span>(foo, [1, 2, foo, 1, 2, foo]).
 [[1, 2, foo], [1, 2, foo]].
@@ -694,17 +695,17 @@ There are a variety of macros for this:
 </div>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">6</span> Nemesis</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-org56109b6" class="outline-2">
+<h2 id="org56109b6">Nemesis</h2>
+<div class="outline-text-2" id="text-org56109b6">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">6.1</span> Are your supervisors tested?</h3>
-<div class="outline-text-3" id="text-6-1">
+<div id="outline-container-org435ccde" class="outline-3">
+<h3 id="org435ccde">Are your supervisors tested?</h3>
+<div class="outline-text-3" id="text-org435ccde">
 <ul class="org-ul">
 <li>Taking fault-tolerance seriously is one of the selling points of Erlang.
 Organizing processes in supervisor trees is used widely, but not often tested</li>
@@ -718,9 +719,9 @@ Organizing processes in supervisor trees is used widely, but not often tested</l
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">6.2</span> Fault injection</h3>
-<div class="outline-text-3" id="text-6-2">
+<div id="outline-container-orgcabd71e" class="outline-3">
+<h3 id="orgcabd71e">Fault injection</h3>
+<div class="outline-text-3" id="text-orgcabd71e">
 <p>
 Any tracepoint can be used to inject errors into the system
 </p>
@@ -740,13 +741,13 @@ Any tracepoint can be used to inject errors into the system
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">6.3</span> Fault scenarios</h3>
-<div class="outline-text-3" id="text-6-3">
+<div id="outline-container-orgc43de40" class="outline-3">
+<h3 id="orgc43de40">Fault scenarios</h3>
+<div class="outline-text-3" id="text-orgc43de40">
 </div>
-<ol class="org-ol">
-<li><a id="org"></a>Always crash:<br />
-<div class="outline-text-4" id="text-6-3-1">
+<ul class="org-ul">
+<li><a id="orgd28c34f"></a>Always crash:<br />
+<div class="outline-text-4" id="text-orgd28c34f">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">inject_crash</span>(..., <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>:<span style="color: #8ae234; font-weight: bold;">always_crash</span>())
 </pre>
@@ -754,8 +755,8 @@ Any tracepoint can be used to inject errors into the system
 </div>
 </li>
 
-<li><a id="org"></a>Crash <code>N</code> times:<br />
-<div class="outline-text-4" id="text-6-3-2">
+<li><a id="org53fa407"></a>Crash <code>N</code> times:<br />
+<div class="outline-text-4" id="text-org53fa407">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">inject_crash</span>(..., <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>:<span style="color: #8ae234; font-weight: bold;">recover_after</span>(10))
 </pre>
@@ -763,8 +764,8 @@ Any tracepoint can be used to inject errors into the system
 </div>
 </li>
 
-<li><a id="org"></a>Crash randomly with probability <code>P</code>:<br />
-<div class="outline-text-4" id="text-6-3-3">
+<li><a id="org3a1eb1d"></a>Crash randomly with probability <code>P</code>:<br />
+<div class="outline-text-4" id="text-org3a1eb1d">
 <div class="org-src-container">
 <pre class="src src-erlang">?<span style="color: #8ae234;">inject_crash</span>(..., <span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>:<span style="color: #8ae234; font-weight: bold;">random_crash</span>(0.1))
 </pre>
@@ -772,8 +773,8 @@ Any tracepoint can be used to inject errors into the system
 </div>
 </li>
 
-<li><a id="org"></a>Crash periodically:<br />
-<div class="outline-text-4" id="text-6-3-4">
+<li><a id="orgc3e9b30"></a>Crash periodically:<br />
+<div class="outline-text-4" id="text-orgc3e9b30">
 <div class="org-src-container">
 <pre class="src src-erlang"><span style="color: #8ae234; font-weight: bold;">snabbkaffe_nemesis</span>:<span style="color: #8ae234; font-weight: bold;">periodic_crash</span>(
   <span style="color: #eeeeaa;">_Period</span> = 10, <span style="color: #eeeeaa;">_DutyCycle</span> = 0.5, <span style="color: #eeeeaa;">_Phase</span> = <span style="color: #8ae234; font-weight: bold;">math</span>:<span style="color: #8ae234; font-weight: bold;">pi</span>())
@@ -781,12 +782,12 @@ Any tracepoint can be used to inject errors into the system
 </div>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">6.4</span> Manipulating process schedulings</h3>
-<div class="outline-text-3" id="text-6-4">
+<div id="outline-container-orgcb75287" class="outline-3">
+<h3 id="orgcb75287">Manipulating process schedulings</h3>
+<div class="outline-text-3" id="text-orgcb75287">
 <ul class="org-ul">
 <li>Sometimes it is necessary to test a certain process scheduling</li>
 
@@ -811,13 +812,13 @@ But in rare cases the opposite happens, and the bug occurs</li>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">7</span> Using snabbkaffe as a benchmark library</h2>
-<div class="outline-text-2" id="text-7">
+<div id="outline-container-org7b15a6d" class="outline-2">
+<h2 id="org7b15a6d">Using snabbkaffe as a benchmark library</h2>
+<div class="outline-text-2" id="text-org7b15a6d">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">7.1</span> Disclaimer</h3>
-<div class="outline-text-3" id="text-7-1">
+<div id="outline-container-orga9085fa" class="outline-3">
+<h3 id="orga9085fa">Disclaimer</h3>
+<div class="outline-text-3" id="text-orga9085fa">
 <ul class="org-ul">
 <li>This usecase is a secondary, and quite rudimentary. Don't expect much</li>
 <li>It lacks many features of proper benchmarking libraries, such as
@@ -829,9 +830,9 @@ But in rare cases the opposite happens, and the bug occurs</li>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">7.2</span> Reporting metrics</h3>
-<div class="outline-text-3" id="text-7-2">
+<div id="outline-container-org34bfdb3" class="outline-3">
+<h3 id="org34bfdb3">Reporting metrics</h3>
+<div class="outline-text-3" id="text-org34bfdb3">
 <div class="org-src-container">
 <pre class="src src-erlang"><span style="color: #888a85;">%% </span><span style="color: #888a85;">Report a single scalar datapoint:</span>
 <span style="color: #8ae234; font-weight: bold;">snabbkaffe</span>:<span style="color: #8ae234; font-weight: bold;">push_stat</span>(scalar_metric_name, <span style="color: #eeeeaa;">Value</span>),
@@ -846,9 +847,9 @@ But in rare cases the opposite happens, and the bug occurs</li>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">7.3</span> Using spans to analyze performance</h3>
-<div class="outline-text-3" id="text-7-3">
+<div id="outline-container-org4b5eb0f" class="outline-3">
+<h3 id="org4b5eb0f">Using spans to analyze performance</h3>
+<div class="outline-text-3" id="text-org4b5eb0f">
 <p>
 <code>push_stats</code> function also works together with <code>?find_pairs</code> macro:
 </p>
@@ -868,9 +869,9 @@ But in rare cases the opposite happens, and the bug occurs</li>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">7.4</span> Analyzing the results</h3>
-<div class="outline-text-3" id="text-7-4">
+<div id="outline-container-org6440a7b" class="outline-3">
+<h3 id="org6440a7b">Analyzing the results</h3>
+<div class="outline-text-3" id="text-org6440a7b">
 <p>
 Use the following function in the end of check stage:
 </p>
@@ -883,7 +884,7 @@ Use the following function in the end of check stage:
 It will print the results in the console:
 </p>
 
-<pre class="example" id="org">
+<pre class="example" id="org612836d">
 Mean scalar_metric_name: 10.0
 
 Statisitics of metric_name
@@ -900,13 +901,13 @@ Statisitics of metric_name
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">8</span> Conclusion</h2>
-<div class="outline-text-2" id="text-8">
+<div id="outline-container-orgcf01b3a" class="outline-2">
+<h2 id="orgcf01b3a">Conclusion</h2>
+<div class="outline-text-2" id="text-orgcf01b3a">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">8.1</span> Useful links</h3>
-<div class="outline-text-3" id="text-8-1">
+<div id="outline-container-org3805086" class="outline-3">
+<h3 id="org3805086">Useful links</h3>
+<div class="outline-text-3" id="text-org3805086">
 <p>
 <a href="https://github.com/kafka4beam/snabbkaffe">https://github.com/kafka4beam/snabbkaffe</a>
 </p>
@@ -920,9 +921,9 @@ Suggestions, bug reports and patches are welcome!
 </p>
 </div>
 
-<ol class="org-ol">
-<li><a id="org"></a>Snabbkaffe in action<br />
-<div class="outline-text-4" id="text-8-1-1">
+<ul class="org-ul">
+<li><a id="org5c3c730"></a>Snabbkaffe in action<br />
+<div class="outline-text-4" id="text-org5c3c730">
 <p>
 Feel free to use as an example (clickable links):
 </p>
@@ -938,12 +939,9 @@ Feel free to use as an example (clickable links):
 </ul>
 </div>
 </li>
-</ol>
+</ul>
 </div>
 </div>
-</div>
-<div id="postamble" class="status">
-<p class="date">Date: 2020-12-01</p>
 </div>
 </body>
 </html>

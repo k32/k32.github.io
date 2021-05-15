@@ -3,6 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
+<!-- 2021-05-15 lör 17:54 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Trace-based testing</title>
@@ -49,9 +50,9 @@ testing compares with more traditional approaches such as stateful
 property-based testing.
 </p>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">1</span> Conventional approach</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-org7d10404" class="outline-2">
+<h2 id="org7d10404">Conventional approach</h2>
+<div class="outline-text-2" id="text-org7d10404">
 <p>
 Typical component test usually follows the same common scenario: first
 a clean test environment is created. This probably involves spinning
@@ -107,9 +108,9 @@ So, what is wrong about this basic and familiar design?
 </p>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.1</span> Scalability</h3>
-<div class="outline-text-3" id="text-1-1">
+<div id="outline-container-org46f86fb" class="outline-3">
+<h3 id="org46f86fb">Scalability</h3>
+<div class="outline-text-3" id="text-org46f86fb">
 <p>
 First problem is run time. Obviously, one wants to verify as many
 different properties as possible. But a complex SUT may require a
@@ -165,9 +166,9 @@ event trace can be recorded once and analyzed however many times.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">1.2</span> Error detection</h3>
-<div class="outline-text-3" id="text-1-2">
+<div id="outline-container-org69327a2" class="outline-3">
+<h3 id="org69327a2">Error detection</h3>
+<div class="outline-text-3" id="text-org69327a2">
 <p>
 "Retry N times until test condition becomes true and call it a pass"
 is a pretty common pattern found in tests. Although it works
@@ -197,13 +198,13 @@ trivially detected in a trace-based test by counting failover events.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">2</span> Trace-based approach</h2>
-<div class="outline-text-2" id="text-2">
+<div id="outline-container-org421e4ee" class="outline-2">
+<h2 id="org421e4ee">Trace-based approach</h2>
+<div class="outline-text-2" id="text-org421e4ee">
 </div>
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.1</span> Prior work</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-org60ec6f3" class="outline-3">
+<h3 id="org60ec6f3">Prior work</h3>
+<div class="outline-text-3" id="text-org60ec6f3">
 <p>
 The below (incomplete!) list contains some examples of libraries using
 trace-based approach:
@@ -220,9 +221,9 @@ far as my ability to read Clojure goes).</li>
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.2</span> Introducing Snabbkaffe</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-orga835ed0" class="outline-3">
+<h3 id="orga835ed0">Introducing Snabbkaffe</h3>
+<div class="outline-text-3" id="text-orga835ed0">
 <p>
 <a href="https://github.com/klarna/snabbkaffe">Snabbkaffe</a> is a small Erlang application inspired by the above
 libraries. Above all, it tries to be accessible and compatible with
@@ -233,9 +234,9 @@ errors.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.3</span> Instrumenting the code</h3>
-<div class="outline-text-3" id="text-2-3">
+<div id="outline-container-org3d29699" class="outline-3">
+<h3 id="org3d29699">Instrumenting the code</h3>
+<div class="outline-text-3" id="text-org3d29699">
 <p>
 Trace points are added to the code manually using <code>?tp</code> macro:
 </p>
@@ -288,9 +289,9 @@ that takes 3 arguments:
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.4</span> Structure of the testcase</h3>
-<div class="outline-text-3" id="text-2-4">
+<div id="outline-container-org5da2fac" class="outline-3">
+<h3 id="org5da2fac">Structure of the testcase</h3>
+<div class="outline-text-3" id="text-org5da2fac">
 <p>
 In order to address scalability issue mentioned above, snabbkaffe
 decouples execution of test scenario from the checks. Testcases are
@@ -351,9 +352,9 @@ parameters that are out of scope of this post.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.5</span> Analyzing the trace</h3>
-<div class="outline-text-3" id="text-2-5">
+<div id="outline-container-org1ab764f" class="outline-3">
+<h3 id="org1ab764f">Analyzing the trace</h3>
+<div class="outline-text-3" id="text-org1ab764f">
 <p>
 Remember that trace analysis is done offline, so any pure function can
 be used for this task. Snabbakaffe comes with a few useful functions
@@ -465,9 +466,9 @@ project and stripped of irrelevant details):
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.6</span> Waiting for events</h3>
-<div class="outline-text-3" id="text-2-6">
+<div id="outline-container-orgd6b0134" class="outline-3">
+<h3 id="orgd6b0134">Waiting for events</h3>
+<div class="outline-text-3" id="text-orgd6b0134">
 <p>
 Run stage often needs to wait for something to happen. This can be
 needed, for example, when some part of the system is activated
@@ -522,9 +523,9 @@ running it.
 </div>
 </div>
 
-<div id="outline-container-org" class="outline-3">
-<h3 id="org"><span class="section-number-3">2.7</span> PropER integration</h3>
-<div class="outline-text-3" id="text-2-7">
+<div id="outline-container-org817959c" class="outline-3">
+<h3 id="org817959c">PropER integration</h3>
+<div class="outline-text-3" id="text-org817959c">
 <p>
 Snabbkaffe works nicely with PropER. <code>?check_trace</code> macro can be used
 to define stateless properties, and there is, in fact, a shortcut for
@@ -609,9 +610,9 @@ The below table highlights some of the benefits of each solution:
 </div>
 
 
-<div id="outline-container-org" class="outline-2">
-<h2 id="org"><span class="section-number-2">3</span> Future posts</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-orgb46c7b3" class="outline-2">
+<h2 id="orgb46c7b3">Future posts</h2>
+<div class="outline-text-2" id="text-orgb46c7b3">
 <p>
 Here's a teaser of what's coming:
 </p>
@@ -648,8 +649,5 @@ actions!
 
 </div>
 </div></div>
-<div id="postamble" class="status">
-<p class="date">Date: 2019-10-11</p>
-</div>
 </body>
 </html>
