@@ -6,7 +6,7 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>mån, 03 maj 2021 18:09:10 +0200</lastBuildDate>
+<lastBuildDate>lör, 15 maj 2021 03:05:12 +0200</lastBuildDate>
 <item>
   <title>Mnesia internals</title>
   <description><![CDATA[<div id="content">
@@ -19,40 +19,188 @@ post with more details.
 </p>
 
  <p>
-Disclaimer: I am not an OTP dev, and not a mnesia dev, thus anything
-that will be posted here will be derived from reading (the poorly
-documented) code and my own experiments. So THE BLOG POST IS PROVIDED
-"AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, and so on.
+Disclaimer: I am not an OTP dev, and not a mnesia dev. Anything
+that will be posted here will be derived from reading the code.
 </p>
 
  <div id="outline-container-org" class="outline-2">
- <h2 id="org"> <span class="section-number-2">1</span>  <span class="todo TODO">TODO</span> Transaction flow</h2>
+ <h2 id="org"> <span class="section-number-2">1</span> Transaction</h2>
  <div class="outline-text-2" id="text-1">
+ <p>
+Transaction fun runs in the same process that calls  <code>mnesia:transaction</code> function.
+Most of the work during the commit stage is also done in the user process.
+</p>
+
 
  <div id="org" class="figure">
- <p> <img src="mnesia_simplified.png" alt="mnesia_simplified.png"></img></p>
+ <p> <object type="image/svg+xml" data="mnesia_trans.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-4">
+ <h4 id="org"> <span class="section-number-4">1.0.1</span> What's inside mnesia_activity_state?</h4>
+ <div class="outline-text-4" id="text-1-0-1">
+ <p>
+ <code>mnesia_activity_state</code> is a process dictionary variable in the transaction process.
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang">{mnesia,
+ # <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 13, pid = <0.125.0>},
+ # <span style="color: #8ae234; font-weight: bold;">tidstore</span>{store = #Ref<0.3426409509.1642725377.222071>,
+           up_stores = [],
+           level = 1
+          }}
+</pre>
+</div>
+
+ <p>
+Counter is the Lamport clock (kept by  <code>mnesia_tm</code> process)  <i>at the beginning</i> of the transaction.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-4">
+ <h4 id="org"> <span class="section-number-4">1.0.2</span> What's inside the tidstore table?</h4>
+ <div class="outline-text-4" id="text-1-0-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang">[{{bar,1},{bar,1,2},write},
+ {{foo,3},{foo,3,3}, write},
+ {{locks,foo,3}, write},
+ {{locks,bar,1}, write},
+ {nodes,  <span style="color: #ad7fa8; font-style: italic;">'foo@me-emq'</span>},
+ {nodes,  <span style="color: #ad7fa8; font-style: italic;">'bar@me-emq'</span>}]
+</pre>
+</div>
 </div>
 </div>
 </div>
 
  <div id="outline-container-org" class="outline-2">
- <h2 id="org"> <span class="section-number-2">2</span>  <span class="todo TODO">TODO</span> Scalability</h2>
+ <h2 id="org"> <span class="section-number-2">2</span>  <span class="todo TODO">TODO</span> Commit process in detail</h2>
  <div class="outline-text-2" id="text-2">
  <p>
-As should be evident from the above diagram, transaction latency is
-expected to grow when the number of nodes in the cluster
-grows. Indeed, this effect was observed in the test with the help of
- <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
-</p>
-
- <p>
-Graph of Mnesia vs. "the new thing" prototype we're working on:
+Commit procedure also mostly happens in the caller process.
+This process acts as the coordinator.
 </p>
 
 
  <div id="org" class="figure">
- <p> <img src="rlog_comparison.png" alt="rlog_comparison.png"></img></p>
+ <p> <object type="image/svg+xml" data="mnesia_subscr.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
 </div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">2.1</span> Arrange</h3>
+ <div class="outline-text-3" id="text-2-1">
+ <p>
+Arrange function is pretty convoluted.
+Thankfully, it only uses the local data from the transaction store and the schema.
+It creates a tuple of the following type:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
+....
+{2,
+ # <span style="color: #8ae234; font-weight: bold;">prep</span>{protocol = sym_trans,
+       records = [# <span style="color: #8ae234; font-weight: bold;">commit</span>{node =  <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,
+                          decision = presume_commit,
+                          ram_copies = [{{foo,1},{foo,1,2},write},
+                                        {{foo,3},{foo,3,3},write}],
+                          disc_copies = [],disc_only_copies = [],ext = [],
+                          schema_ops = []},
+                  # <span style="color: #8ae234; font-weight: bold;">commit</span>{node =  <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,decision = presume_commit,
+                          ram_copies = [{{foo,1},{foo,1,2},write},
+                                        {{foo,3},{foo,3,3},write}],
+                          disc_copies = [],disc_only_copies = [],ext = [],
+                          schema_ops = []}],
+       prev_tab = foo,
+       prev_types = [{ <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,ram_copies},
+                     { <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,ram_copies}],
+       prev_snmp = [],
+       types = [{ <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,ram_copies},
+                { <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>,ram_copies}],
+       majority = [],
+       sync = false}}
+</pre>
+</div>
+
+ <p>
+The first element is the number of write/delete ops in the transaction.
+This number is used to determine whether the transaction is r/o or r/w.
+</p>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-3">
+ <h3 id="org"> <span class="section-number-3">2.2</span> What is stored in the mnesia_tm's state?</h3>
+ <div class="outline-text-3" id="text-2-2">
+ <div class="org-src-container">
+ <pre class="src src-erlang"># <span style="color: #8ae234; font-weight: bold;">state</span>{
+    coordinators = {0,nil},
+    participants =  <span style="color: #888a85;">%% </span> <span style="color: #888a85;">Note: this field is a `</span> <span style="color: #729fcf; font-weight: bold;">gb_tree</span> <span style="color: #888a85;">'. So don't mind stuff in the outer tuple</span>
+        {1,
+         {# <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 32,pid = <11304.125.0>},
+          # <span style="color: #8ae234; font-weight: bold;">participant</span>{
+              tid = # <span style="color: #8ae234; font-weight: bold;">tid</span>{counter = 32,pid = <11304.125.0>},
+              pid = nopid,
+              commit =
+                  # <span style="color: #8ae234; font-weight: bold;">commit</span>{
+                      node =  <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>,decision = presume_commit,
+                      ram_copies =
+                          [{{foo,1},{foo,1,2},write},{{foo,3},{foo,3,3},write}],
+                      disc_copies = [],disc_only_copies = [],ext = [],
+                      schema_ops = []},
+              disc_nodes = [],
+              ram_nodes = [ <span style="color: #ad7fa8; font-style: italic;">'foo@localhost'</span>, <span style="color: #ad7fa8; font-style: italic;">'bar@localhost'</span>],
+              protocol = sym_trans},
+          nil,nil}},
+    supervisor = <0.99.0>,blocked_tabs = [],dirty_queue = [],
+    fixed_tabs = []
+  }
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">3</span>  <span class="todo TODO">TODO</span> Transactional reads and writes</h2>
+ <div class="outline-text-2" id="text-3">
+
+ <div id="org" class="figure">
+ <p> <object type="image/svg+xml" data="mnesia_simplified.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">4</span>  <span class="todo TODO">TODO</span> Locker</h2>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">5</span>  <span class="todo TODO">TODO</span> Schema</h2>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">6</span>  <span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
+</div>
+
+ <div id="outline-container-org" class="outline-2">
+ <h2 id="org"> <span class="section-number-2">7</span>  <span class="todo TODO">TODO</span> Scalability</h2>
+ <div class="outline-text-2" id="text-7">
+ <p>
+As should be evident from the above diagram, transaction latency is expected to grow when the number of nodes in the cluster grows.
+Indeed, we observed this effect in the test with the help of  <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
+</p>
 </div>
 </div>
 </div>]]></description>
