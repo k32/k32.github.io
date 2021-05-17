@@ -49,9 +49,9 @@ testing compares with more traditional approaches such as stateful
 property-based testing.
 </p>
 
-<div id="outline-container-org8d217eb" class="outline-2">
-<h2 id="org8d217eb">Conventional approach</h2>
-<div class="outline-text-2" id="text-org8d217eb">
+<div id="outline-container-org97d6042" class="outline-2">
+<h2 id="org97d6042"><span class="section-number-2">1</span> Conventional approach</h2>
+<div class="outline-text-2" id="text-1">
 <p>
 Typical component test usually follows the same common scenario: first
 a clean test environment is created. This probably involves spinning
@@ -107,9 +107,9 @@ So, what is wrong about this basic and familiar design?
 </p>
 </div>
 
-<div id="outline-container-org61cb6b4" class="outline-3">
-<h3 id="org61cb6b4">Scalability</h3>
-<div class="outline-text-3" id="text-org61cb6b4">
+<div id="outline-container-org68d9d04" class="outline-3">
+<h3 id="org68d9d04"><span class="section-number-3">1.1</span> Scalability</h3>
+<div class="outline-text-3" id="text-1-1">
 <p>
 First problem is run time. Obviously, one wants to verify as many
 different properties as possible. But a complex SUT may require a
@@ -165,9 +165,9 @@ event trace can be recorded once and analyzed however many times.
 </div>
 </div>
 
-<div id="outline-container-org2e3dbee" class="outline-3">
-<h3 id="org2e3dbee">Error detection</h3>
-<div class="outline-text-3" id="text-org2e3dbee">
+<div id="outline-container-orga1d0569" class="outline-3">
+<h3 id="orga1d0569"><span class="section-number-3">1.2</span> Error detection</h3>
+<div class="outline-text-3" id="text-1-2">
 <p>
 "Retry N times until test condition becomes true and call it a pass"
 is a pretty common pattern found in tests. Although it works
@@ -197,13 +197,13 @@ trivially detected in a trace-based test by counting failover events.
 </div>
 </div>
 
-<div id="outline-container-org7065e0d" class="outline-2">
-<h2 id="org7065e0d">Trace-based approach</h2>
-<div class="outline-text-2" id="text-org7065e0d">
+<div id="outline-container-org1310fde" class="outline-2">
+<h2 id="org1310fde"><span class="section-number-2">2</span> Trace-based approach</h2>
+<div class="outline-text-2" id="text-2">
 </div>
-<div id="outline-container-org03aaa56" class="outline-3">
-<h3 id="org03aaa56">Prior work</h3>
-<div class="outline-text-3" id="text-org03aaa56">
+<div id="outline-container-orgb28d20d" class="outline-3">
+<h3 id="orgb28d20d"><span class="section-number-3">2.1</span> Prior work</h3>
+<div class="outline-text-3" id="text-2-1">
 <p>
 The below (incomplete!) list contains some examples of libraries using
 trace-based approach:
@@ -220,9 +220,9 @@ far as my ability to read Clojure goes).</li>
 </div>
 </div>
 
-<div id="outline-container-orgb6cc04e" class="outline-3">
-<h3 id="orgb6cc04e">Introducing Snabbkaffe</h3>
-<div class="outline-text-3" id="text-orgb6cc04e">
+<div id="outline-container-org42f48c7" class="outline-3">
+<h3 id="org42f48c7"><span class="section-number-3">2.2</span> Introducing Snabbkaffe</h3>
+<div class="outline-text-3" id="text-2-2">
 <p>
 <a href="https://github.com/klarna/snabbkaffe">Snabbkaffe</a> is a small Erlang application inspired by the above
 libraries. Above all, it tries to be accessible and compatible with
@@ -233,9 +233,9 @@ errors.
 </div>
 </div>
 
-<div id="outline-container-org4cdb852" class="outline-3">
-<h3 id="org4cdb852">Instrumenting the code</h3>
-<div class="outline-text-3" id="text-org4cdb852">
+<div id="outline-container-org4b3c892" class="outline-3">
+<h3 id="org4b3c892"><span class="section-number-3">2.3</span> Instrumenting the code</h3>
+<div class="outline-text-3" id="text-2-3">
 <p>
 Trace points are added to the code manually using <code>?tp</code> macro:
 </p>
@@ -288,9 +288,9 @@ that takes 3 arguments:
 </div>
 </div>
 
-<div id="outline-container-org55740e3" class="outline-3">
-<h3 id="org55740e3">Structure of the testcase</h3>
-<div class="outline-text-3" id="text-org55740e3">
+<div id="outline-container-org45e8709" class="outline-3">
+<h3 id="org45e8709"><span class="section-number-3">2.4</span> Structure of the testcase</h3>
+<div class="outline-text-3" id="text-2-4">
 <p>
 In order to address scalability issue mentioned above, snabbkaffe
 decouples execution of test scenario from the checks. Testcases are
@@ -351,9 +351,9 @@ parameters that are out of scope of this post.
 </div>
 </div>
 
-<div id="outline-container-orgbe05838" class="outline-3">
-<h3 id="orgbe05838">Analyzing the trace</h3>
-<div class="outline-text-3" id="text-orgbe05838">
+<div id="outline-container-org4dfc48e" class="outline-3">
+<h3 id="org4dfc48e"><span class="section-number-3">2.5</span> Analyzing the trace</h3>
+<div class="outline-text-3" id="text-2-5">
 <p>
 Remember that trace analysis is done offline, so any pure function can
 be used for this task. Snabbakaffe comes with a few useful functions
@@ -465,9 +465,9 @@ project and stripped of irrelevant details):
 </div>
 </div>
 
-<div id="outline-container-org6c2d32c" class="outline-3">
-<h3 id="org6c2d32c">Waiting for events</h3>
-<div class="outline-text-3" id="text-org6c2d32c">
+<div id="outline-container-orgbdb7034" class="outline-3">
+<h3 id="orgbdb7034"><span class="section-number-3">2.6</span> Waiting for events</h3>
+<div class="outline-text-3" id="text-2-6">
 <p>
 Run stage often needs to wait for something to happen. This can be
 needed, for example, when some part of the system is activated
@@ -522,9 +522,9 @@ running it.
 </div>
 </div>
 
-<div id="outline-container-org7f17b83" class="outline-3">
-<h3 id="org7f17b83">PropER integration</h3>
-<div class="outline-text-3" id="text-org7f17b83">
+<div id="outline-container-orga4fd7a2" class="outline-3">
+<h3 id="orga4fd7a2"><span class="section-number-3">2.7</span> PropER integration</h3>
+<div class="outline-text-3" id="text-2-7">
 <p>
 Snabbkaffe works nicely with PropER. <code>?check_trace</code> macro can be used
 to define stateless properties, and there is, in fact, a shortcut for
@@ -609,9 +609,9 @@ The below table highlights some of the benefits of each solution:
 </div>
 
 
-<div id="outline-container-orga50fd48" class="outline-2">
-<h2 id="orga50fd48">Future posts</h2>
-<div class="outline-text-2" id="text-orga50fd48">
+<div id="outline-container-org9212283" class="outline-2">
+<h2 id="org9212283"><span class="section-number-2">3</span> Future posts</h2>
+<div class="outline-text-2" id="text-3">
 <p>
 Here's a teaser of what's coming:
 </p>

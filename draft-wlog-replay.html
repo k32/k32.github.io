@@ -35,9 +35,9 @@ I tried to find the answer using formal mathematical proof in Coq.
 Here's what I came up with.
 </p>
 
-<div id="outline-container-org61927e3" class="outline-2">
-<h2 id="org61927e3">Definition of key-value storage</h2>
-<div class="outline-text-2" id="text-org61927e3">
+<div id="outline-container-org7ccc9b0" class="outline-2">
+<h2 id="org7ccc9b0"><span class="section-number-2">1</span> Definition of key-value storage</h2>
+<div class="outline-text-2" id="text-1">
 <p>
 We start from defining an abstraction for the database storage engine:
 </p>
@@ -219,9 +219,9 @@ Hopefully, these properties sound intuitive.
 </div>
 
 
-<div id="outline-container-orgf955940" class="outline-2">
-<h2 id="orgf955940">Database equality</h2>
-<div class="outline-text-2" id="text-orgf955940">
+<div id="outline-container-org724eb74" class="outline-2">
+<h2 id="org724eb74"><span class="section-number-2">2</span> Database equality</h2>
+<div class="outline-text-2" id="text-2">
 <p>
 Now let's define equality of <code>Storage</code> instances.
 We consider two databases equal if they contain the same set of keys and values:
@@ -251,9 +251,9 @@ Note that our definition (<code>=s=</code>) is not equivalent to the standard Co
 </div>
 </div>
 
-<div id="outline-container-orgc5fb0e8" class="outline-2">
-<h2 id="orgc5fb0e8">Simple proofs</h2>
-<div class="outline-text-2" id="text-orgc5fb0e8">
+<div id="outline-container-org2d8e955" class="outline-2">
+<h2 id="org2d8e955"><span class="section-number-2">3</span> Simple proofs</h2>
+<div class="outline-text-2" id="text-3">
 <p>
 Let's play with our definitions to make sure they are useful.
 </p>
@@ -308,9 +308,9 @@ This is a contradiction. Qed.
 </div>
 </div>
 
-<div id="outline-container-org5d79f23" class="outline-2">
-<h2 id="org5d79f23">Wait, what?</h2>
-<div class="outline-text-2" id="text-org5d79f23">
+<div id="outline-container-org1d29c4f" class="outline-2">
+<h2 id="org1d29c4f"><span class="section-number-2">4</span> Wait, what?</h2>
+<div class="outline-text-2" id="text-4">
 <p>
 <i>Warning: if you are familiar with coq, you are advised to skip this section, because my layman explanation may be offensively naïve.</i>
 <i>Proceed reading at your own risk, and feel free to submit your complaints as PRs to <a href="https://github.com/k32/k32">https://github.com/k32/k32</a></i>
@@ -327,9 +327,9 @@ I won't pretend that this will be a great explanation, so I immediately refer to
 </p>
 </div>
 
-<div id="outline-container-orge8b13fd" class="outline-3">
-<h3 id="orge8b13fd">Curry-Howard correspondence</h3>
-<div class="outline-text-3" id="text-orge8b13fd">
+<div id="outline-container-org8a2c6ec" class="outline-3">
+<h3 id="org8a2c6ec"><span class="section-number-3">4.1</span> Curry-Howard correspondence</h3>
+<div class="outline-text-3" id="text-4-1">
 <p>
 One of the core ideas of using computers to verify mathematical<sup><a id="fnr.1" class="footref" href="#fn.1">1</a></sup> proofs is based on the bright idea called "the Curry-Howard correspondence".
 It's often summarized in a quote:
@@ -342,7 +342,7 @@ A proof is a program; the formula it proves is a type for the program
 </blockquote>
 
 <p>
-As it turns out, all the laws of the mathematical logic<sup><a id="fnr.1.100" class="footref" href="#fn.1">1</a></sup>, such as negation, implication, conjunction and disjunction can be expressed as <a href="#orgf443786">small programs</a>.
+As it turns out, all the laws of the mathematical logic<sup><a id="fnr.1.100" class="footref" href="#fn.1">1</a></sup>, such as negation, implication, conjunction and disjunction can be expressed as <a href="#orge3c2a7e">small programs</a>.
 In other words, writing a program in a pure functional language is fundamentally the same process as creating a proof of a theorem.
 Following from that, typechecking is fundamentally the same process as verifying the proof.
 </p>
@@ -355,13 +355,13 @@ Coq is special in this regard, because it does that.
 </div>
 </div>
 
-<div id="outline-container-org16026ca" class="outline-3">
-<h3 id="org16026ca">The true nature of Coq</h3>
+<div id="outline-container-org3267ef6" class="outline-3">
+<h3 id="org3267ef6"><span class="section-number-3">4.2</span> The true nature of Coq</h3>
 </div>
 
-<div id="outline-container-org099e6ac" class="outline-3">
-<h3 id="org099e6ac">Interactive proving</h3>
-<div class="outline-text-3" id="text-org099e6ac">
+<div id="outline-container-orgd3df755" class="outline-3">
+<h3 id="orgd3df755"><span class="section-number-3">4.3</span> Interactive proving</h3>
+<div class="outline-text-3" id="text-4-3">
 <p>
 Pair programming analogy
 </p>
@@ -369,34 +369,34 @@ Pair programming analogy
 </div>
 </div>
 
-<div id="outline-container-org483c1a5" class="outline-2">
-<h2 id="org483c1a5">Transaction log replay</h2>
-<div class="outline-text-2" id="text-org483c1a5">
+<div id="outline-container-org3aa1098" class="outline-2">
+<h2 id="org3aa1098"><span class="section-number-2">5</span> Transaction log replay</h2>
+<div class="outline-text-2" id="text-5">
 <p>
 Let's prove that applying the same <code>put</code> operation to
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgf443786" class="outline-2">
-<h2 id="orgf443786">Appendix: logical statements as functional programs</h2>
-<div class="outline-text-2" id="text-orgf443786">
+<div id="outline-container-orge3c2a7e" class="outline-2">
+<h2 id="orge3c2a7e"><span class="section-number-2">6</span> Appendix: logical statements as functional programs</h2>
+<div class="outline-text-2" id="text-6">
 </div>
-<div id="outline-container-org506f206" class="outline-3">
-<h3 id="org506f206">Implication</h3>
-</div>
-
-<div id="outline-container-org858e1cd" class="outline-3">
-<h3 id="org858e1cd">Conjunction</h3>
+<div id="outline-container-org7fac53e" class="outline-3">
+<h3 id="org7fac53e"><span class="section-number-3">6.1</span> Implication</h3>
 </div>
 
-<div id="outline-container-org55c0a6b" class="outline-3">
-<h3 id="org55c0a6b">Disjunction</h3>
+<div id="outline-container-org53477af" class="outline-3">
+<h3 id="org53477af"><span class="section-number-3">6.2</span> Conjunction</h3>
 </div>
 
-<div id="outline-container-org727a1bd" class="outline-3">
-<h3 id="org727a1bd">Negation</h3>
-<div class="outline-text-3" id="text-org727a1bd">
+<div id="outline-container-orga9da099" class="outline-3">
+<h3 id="orga9da099"><span class="section-number-3">6.3</span> Disjunction</h3>
+</div>
+
+<div id="outline-container-orgc42b27b" class="outline-3">
+<h3 id="orgc42b27b"><span class="section-number-3">6.4</span> Negation</h3>
+<div class="outline-text-3" id="text-6-4">
 </div>
 </div>
 </div>

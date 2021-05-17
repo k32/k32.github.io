@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="989px" preserveAspectRatio="none" style="width:626px;height:989px;" version="1.1" viewBox="0 0 626 989" width="626px" zoomAndPan="magnify">
+  <defs>
+    <filter height="300%" id="f16sq3m69rwe5a" width="300%" x="-1" y="-1">
+      <feGaussianBlur result="blurOut" stdDeviation="2.0"/>
+      <feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/>
+      <feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/>
+      <feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/>
+    </filter>
+  </defs>
+  <g>
+    <rect fill="#FFFFFF" height="974.0802" style="stroke: #A80036; stroke-width: 1.0;" width="95" x="122" y="4"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="89" x="125" y="17.897">Original node</text>
+    <rect fill="#ADD8E6" height="974.0802" style="stroke: #A80036; stroke-width: 1.0;" width="99" x="387.5" y="4"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="86" x="394" y="17.897">Participant A</text>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="806.5324" style="stroke: #A80036; stroke-width: 1.0;" width="10" x="164.5" y="105.4799"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="672.4143" style="stroke: #A80036; stroke-width: 1.0;" width="10" x="169.5" y="194.892"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="223.2361" style="stroke: #A80036; stroke-width: 1.0;" width="10" x="432" y="512.9521"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="191.2361" style="stroke: #000000; stroke-width: 2.0;" width="446.5" x="56" y="336.716"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="157.5301" style="stroke: #000000; stroke-width: 2.0;" width="426.5" x="66" y="363.4221"/>
+    <rect fill="#FFFFFF" height="93.118" style="stroke: none; stroke-width: 1.0;" width="426.5" x="66" y="427.8341"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="157.5301" style="stroke: #000000; stroke-width: 2.0;" width="469.5" x="144.5" y="586.6582"/>
+    <rect fill="#FFFFFF" height="78.412" style="stroke: none; stroke-width: 1.0;" width="469.5" x="144.5" y="665.7762"/>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 5.0,5.0;" x1="169.5" x2="169.5" y1="63.7739" y2="937.0123"/>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 5.0,5.0;" x1="436.5" x2="436.5" y1="63.7739" y2="937.0123"/>
+    <rect fill="#FEFECE" filter="url(#f16sq3m69rwe5a)" height="33.0679" style="stroke: #A80036; stroke-width: 1.5;" width="26" x="154.5" y="25.706"/>
+    <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="12" x="161.5" y="47.672">tx</text>
+    <rect fill="#FEFECE" filter="url(#f16sq3m69rwe5a)" height="33.0679" style="stroke: #A80036; stroke-width: 1.5;" width="26" x="154.5" y="936.0123"/>
+    <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="12" x="161.5" y="957.9782">tx</text>
+    <rect fill="#FEFECE" filter="url(#f16sq3m69rwe5a)" height="33.0679" style="stroke: #A80036; stroke-width: 1.5;" width="87" x="391.5" y="25.706"/>
+    <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="73" x="398.5" y="47.672">mnesia_tm</text>
+    <rect fill="#FEFECE" filter="url(#f16sq3m69rwe5a)" height="33.0679" style="stroke: #A80036; stroke-width: 1.5;" width="87" x="391.5" y="936.0123"/>
+    <text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacingAndGlyphs" textLength="73" x="398.5" y="957.9782">mnesia_tm</text>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="806.5324" style="stroke: #A80036; stroke-width: 1.0;" width="10" x="164.5" y="105.4799"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="672.4143" style="stroke: #A80036; stroke-width: 1.0;" width="10" x="169.5" y="194.892"/>
+    <rect fill="#FFFFFF" filter="url(#f16sq3m69rwe5a)" height="223.2361" style="stroke: #A80036; stroke-width: 1.0;" width="10" x="432" y="512.9521"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="169.5" x2="216.5" y1="92.4799" y2="92.4799"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="216.5" x2="216.5" y1="92.4799" y2="105.4799"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="175.5" x2="216.5" y1="105.4799" y2="105.4799"/>
+    <polygon fill="#A80036" points="185.5,101.4799,175.5,105.4799,185.5,109.4799,181.5,105.4799" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <a href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia.erl#L1790" target="_top" title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia.erl#L1790" xlink:actuate="onRequest" xlink:href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia.erl#L1790" xlink:show="new" xlink:title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia.erl#L1790" xlink:type="simple">
+      <text fill="#0000FF" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" text-decoration="underline" textLength="144" x="181.5" y="86.6709">mnesia:do_dirty_write/3</text>
+    </a>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="174.5" x2="216.5" y1="142.186" y2="142.186"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="216.5" x2="216.5" y1="142.186" y2="155.186"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="175.5" x2="216.5" y1="155.186" y2="155.186"/>
+    <polygon fill="#A80036" points="185.5,151.186,175.5,155.186,185.5,159.186,181.5,155.186" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="158" x="181.5" y="136.377">mnesia_lib:validate_record</text>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="174.5" x2="221.5" y1="181.892" y2="181.892"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="221.5" x2="221.5" y1="181.892" y2="194.892"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="180.5" x2="221.5" y1="194.892" y2="194.892"/>
+    <polygon fill="#A80036" points="190.5,190.892,180.5,194.892,190.5,198.892,186.5,194.892" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <a href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1064" target="_top" title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1064" xlink:actuate="onRequest" xlink:href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1064" xlink:show="new" xlink:title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1064" xlink:type="simple">
+      <text fill="#0000FF" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" text-decoration="underline" textLength="109" x="186.5" y="176.083">mnesia_tm:dirty/2</text>
+    </a>
+    <path d="M8,212.892 L8,275.892 L328,275.892 L328,222.892 L318,212.892 L8,212.892 " fill="#FBFB77" filter="url(#f16sq3m69rwe5a)" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <path d="M318,212.892 L318,222.892 L328,222.892 L318,212.892 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="299" x="14" y="231.789">Send commit records to the other involved nodes,</text>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="255" x="14" y="249.495">but do only wait for one node to complete.</text>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="221" x="14" y="267.201">Preferrably, the local node if possible.</text>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="179.5" x2="221.5" y1="308.716" y2="308.716"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="221.5" x2="221.5" y1="308.716" y2="321.716"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="180.5" x2="221.5" y1="321.716" y2="321.716"/>
+    <polygon fill="#A80036" points="190.5,317.716,180.5,321.716,190.5,325.716,186.5,321.716" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="155" x="186.5" y="302.907">mnesia_tm:prepare_items</text>
+    <path d="M56,336.716 L129,336.716 L129,345.716 L119,355.716 L56,355.716 L56,336.716 " fill="#EEEEEE" style="stroke: #000000; stroke-width: 1.0;"/>
+    <rect fill="none" height="191.2361" style="stroke: #000000; stroke-width: 2.0;" width="446.5" x="56" y="336.716"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="28" x="71" y="351.6131">loop</text>
+    <text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="241" x="144" y="350.475">[for each #commit record in #prep.records]</text>
+    <path d="M66,363.4221 L129,363.4221 L129,372.4221 L119,382.4221 L66,382.4221 L66,363.4221 " fill="#EEEEEE" style="stroke: #000000; stroke-width: 1.0;"/>
+    <rect fill="none" height="157.5301" style="stroke: #000000; stroke-width: 2.0;" width="426.5" x="66" y="363.4221"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="18" x="81" y="378.3191">alt</text>
+    <text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="143" x="144" y="377.181">[#commit.node == node()]</text>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="179.5" x2="221.5" y1="406.8341" y2="406.8341"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="221.5" x2="221.5" y1="406.8341" y2="419.8341"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="180.5" x2="221.5" y1="419.8341" y2="419.8341"/>
+    <polygon fill="#A80036" points="190.5,415.8341,180.5,419.8341,190.5,423.8341,186.5,419.8341" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <a href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1777" target="_top" title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1777" xlink:actuate="onRequest" xlink:href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1777" xlink:show="new" xlink:title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L1777" xlink:type="simple">
+      <text fill="#0000FF" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" text-decoration="underline" textLength="119" x="186.5" y="401.0251">mnesia_tm:do_dirty</text>
+    </a>
+    <line style="stroke: #000000; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="66" x2="492.5" y1="428.8341" y2="428.8341"/>
+    <path d="M76,434.8341 L76,479.8341 L259,479.8341 L259,444.8341 L249,434.8341 L76,434.8341 " fill="#FBFB77" filter="url(#f16sq3m69rwe5a)" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <path d="M249,434.8341 L249,444.8341 L259,444.8341 L249,434.8341 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="136" x="82" y="453.7311">Can be async_dirty too</text>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="162" x="82" y="471.4371">In this case there's no reply</text>
+    <polygon fill="#A80036" points="420,508.9521,430,512.9521,420,512.9521" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="179.5" x2="431" y1="512.9521" y2="512.9521"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="205" x="186.5" y="507.1431">{self(), {sync_dirty, Tid, Head, Tab}}</text>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="442" x2="484" y1="558.6582" y2="558.6582"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="484" x2="484" y1="558.6582" y2="571.6582"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="443" x2="484" y1="571.6582" y2="571.6582"/>
+    <polygon fill="#A80036" points="453,567.6582,443,571.6582,453,575.6582,449,571.6582" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <a href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L221" target="_top" title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L221" xlink:actuate="onRequest" xlink:href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L221" xlink:show="new" xlink:title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L221" xlink:type="simple">
+      <text fill="#0000FF" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" text-decoration="underline" textLength="57" x="449" y="552.8492">doit_loop</text>
+    </a>
+    <path d="M144.5,586.6582 L207.5,586.6582 L207.5,595.6582 L197.5,605.6582 L144.5,605.6582 L144.5,586.6582 " fill="#EEEEEE" style="stroke: #000000; stroke-width: 1.0;"/>
+    <rect fill="none" height="157.5301" style="stroke: #000000; stroke-width: 2.0;" width="469.5" x="144.5" y="586.6582"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="18" x="159.5" y="601.5552">alt</text>
+    <text fill="#000000" font-family="sans-serif" font-size="11" font-weight="bold" lengthAdjust="spacingAndGlyphs" textLength="95" x="222.5" y="600.4171">[table is blocked]</text>
+    <path d="M336,611.3642 L336,656.3642 L534,656.3642 L534,621.3642 L524,611.3642 L336,611.3642 " fill="#FBFB77" filter="url(#f16sq3m69rwe5a)" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <path d="M524,611.3642 L524,621.3642 L534,621.3642 L524,611.3642 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="177" x="342" y="630.2612">Add record to the dirty queue</text>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="119" x="342" y="647.9672">Do not respond yet.</text>
+    <line style="stroke: #000000; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="144.5" x2="614" y1="666.7762" y2="666.7762"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="442" x2="484" y1="691.4822" y2="691.4822"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="484" x2="484" y1="691.4822" y2="704.4822"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="443" x2="484" y1="704.4822" y2="704.4822"/>
+    <polygon fill="#A80036" points="453,700.4822,443,704.4822,453,708.4822,449,704.4822" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="153" x="449" y="685.6732">Res = mnesia_tm:do_dirty</text>
+    <polygon fill="#A80036" points="190.5,732.1882,180.5,736.1882,190.5,736.1882" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="179.5" x2="436" y1="736.1882" y2="736.1882"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="89" x="196.5" y="730.3792">{dirty_res, Res}</text>
+    <path d="M69,756.1882 L69,783.1882 L265,783.1882 L265,766.1882 L255,756.1882 L69,756.1882 " fill="#FBFB77" filter="url(#f16sq3m69rwe5a)" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <path d="M255,756.1882 L255,766.1882 L265,766.1882 L255,756.1882 " fill="#FBFB77" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="175" x="75" y="775.0853">Wait for the first node's reply:</text>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="179.5" x2="221.5" y1="816.6003" y2="816.6003"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="221.5" x2="221.5" y1="816.6003" y2="829.6003"/>
+    <line style="stroke: #A80036; stroke-width: 1.0;" x1="180.5" x2="221.5" y1="829.6003" y2="829.6003"/>
+    <polygon fill="#A80036" points="190.5,825.6003,180.5,829.6003,190.5,833.6003,186.5,829.6003" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <a href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L2026" target="_top" title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L2026" xlink:actuate="onRequest" xlink:href="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L2026" xlink:show="new" xlink:title="https://github.com/erlang/otp/blob/OTP-24.0/lib/mnesia/src/mnesia_tm.erl#L2026" xlink:type="simple">
+      <text fill="#0000FF" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" text-decoration="underline" textLength="133" x="186.5" y="810.7913">mnesia_tm:rec_dirty/2</text>
+    </a>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="179.5" x2="221.5" y1="866.3063" y2="866.3063"/>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="221.5" x2="221.5" y1="866.3063" y2="879.3063"/>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="174.5" x2="221.5" y1="879.3063" y2="879.3063"/>
+    <polygon fill="#A80036" points="184.5,875.3063,174.5,879.3063,184.5,883.3063,180.5,879.3063" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="15" x="186.5" y="860.4973">ok</text>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="174.5" x2="216.5" y1="911.0123" y2="911.0123"/>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="216.5" x2="216.5" y1="911.0123" y2="924.0123"/>
+    <line style="stroke: #A80036; stroke-width: 1.0; stroke-dasharray: 2.0,2.0;" x1="169.5" x2="216.5" y1="924.0123" y2="924.0123"/>
+    <polygon fill="#A80036" points="179.5,920.0123,169.5,924.0123,179.5,928.0123,175.5,924.0123" style="stroke: #A80036; stroke-width: 1.0;"/>
+    <text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacingAndGlyphs" textLength="15" x="181.5" y="905.2033">ok</text>
+  </g>
+</svg>
