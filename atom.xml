@@ -6,7 +6,7 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>mån, 17 maj 2021 12:29:03 +0200</lastBuildDate>
+<lastBuildDate>tis, 16 nov 2021 22:36:22 +0100</lastBuildDate>
 <item>
   <title>Mnesia internals</title>
   <description><![CDATA[<div id="content">
@@ -25,8 +25,8 @@ Anything that will be posted here will be derived from reading the code.
 Pictures contain clickable links.
 </p>
 
- <div id="outline-container-org850463c" class="outline-2">
- <h2 id="org850463c"> <span class="section-number-2">1</span> Transaction</h2>
+ <div id="outline-container-org0c6b13f" class="outline-2">
+ <h2 id="org0c6b13f"> <span class="section-number-2">1</span> Transaction</h2>
  <div class="outline-text-2" id="text-1">
  <p>
 Transaction fun runs in the same process that calls  <code>mnesia:transaction</code> function.
@@ -35,19 +35,19 @@ This helps mnesia scale.
 </p>
 
 
- <div id="orgeab7867" class="figure">
+ <div id="org315f510" class="figure">
  <p> <object type="image/svg+xml" data="mnesia_trans.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
- <div id="outline-container-orga4858da" class="outline-3">
- <h3 id="orga4858da"> <span class="section-number-3">1.1</span> Data structures</h3>
+ <div id="outline-container-org247d3c2" class="outline-3">
+ <h3 id="org247d3c2"> <span class="section-number-3">1.1</span> Data structures</h3>
  <div class="outline-text-3" id="text-1-1">
 </div>
- <div id="outline-container-org6768c91" class="outline-4">
- <h4 id="org6768c91"> <span class="section-number-4">1.1.1</span> What's inside mnesia_activity_state?</h4>
+ <div id="outline-container-org96cde88" class="outline-4">
+ <h4 id="org96cde88"> <span class="section-number-4">1.1.1</span> What's inside mnesia_activity_state?</h4>
  <div class="outline-text-4" id="text-1-1-1">
  <p>
  <code>mnesia_activity_state</code> is a process dictionary variable in the transaction process.
@@ -72,8 +72,8 @@ Counter is the Lamport clock (kept by  <code>mnesia_tm</code> process)  <i>at th
 </div>
 </div>
 
- <div id="outline-container-org69775ce" class="outline-4">
- <h4 id="org69775ce"> <span class="section-number-4">1.1.2</span> What's inside the tidstore table?</h4>
+ <div id="outline-container-org75f90f2" class="outline-4">
+ <h4 id="org75f90f2"> <span class="section-number-4">1.1.2</span> What's inside the tidstore table?</h4>
  <div class="outline-text-4" id="text-1-1-2">
  <div class="org-src-container">
  <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({bar, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
@@ -92,11 +92,11 @@ Counter is the Lamport clock (kept by  <code>mnesia_tm</code> process)  <i>at th
 </div>
 </div>
 
- <div id="outline-container-org83d3023" class="outline-3">
- <h3 id="org83d3023"> <span class="section-number-3">1.2</span>  <span class="todo TODO">TODO</span> Transactional reads and writes</h3>
+ <div id="outline-container-org8bd7968" class="outline-3">
+ <h3 id="org8bd7968"> <span class="section-number-3">1.2</span>  <span class="todo TODO">TODO</span> Transactional reads and writes</h3>
  <div class="outline-text-3" id="text-1-2">
 
- <div id="org5495b46" class="figure">
+ <div id="orgd6ba19d" class="figure">
  <p> <object type="image/svg+xml" data="mnesia_simplified.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
@@ -104,8 +104,8 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
- <div id="outline-container-orgdfcf345" class="outline-3">
- <h3 id="orgdfcf345"> <span class="section-number-3">1.3</span> Commit process in detail</h3>
+ <div id="outline-container-org06ec8f6" class="outline-3">
+ <h3 id="org06ec8f6"> <span class="section-number-3">1.3</span> Commit process in detail</h3>
  <div class="outline-text-3" id="text-1-3">
  <p>
 Commit procedure also mostly happens in the caller process.
@@ -113,15 +113,15 @@ This process acts as the coordinator.
 </p>
 
 
- <div id="org79fbb64" class="figure">
+ <div id="org128c030" class="figure">
  <p> <object type="image/svg+xml" data="mnesia_subscr.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
- <div id="outline-container-orgb4664ca" class="outline-4">
- <h4 id="orgb4664ca"> <span class="section-number-4">1.3.1</span> Arrange</h4>
+ <div id="outline-container-orgc1a5861" class="outline-4">
+ <h4 id="orgc1a5861"> <span class="section-number-4">1.3.1</span> Arrange</h4>
  <div class="outline-text-4" id="text-1-3-1">
  <p>
 Arrange function is pretty convoluted.
@@ -164,8 +164,8 @@ This number is used to determine whether the transaction is r/o or r/w.
 </div>
 </div>
 
- <div id="outline-container-org669493a" class="outline-4">
- <h4 id="org669493a"> <span class="section-number-4">1.3.2</span> What is stored in the mnesia_tm's state?</h4>
+ <div id="outline-container-orga6f4d0c" class="outline-4">
+ <h4 id="orga6f4d0c"> <span class="section-number-4">1.3.2</span> What is stored in the mnesia_tm's state?</h4>
  <div class="outline-text-4" id="text-1-3-2">
  <div class="org-src-container">
  <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">transaction</span>( <span style="color: #729fcf; font-weight: bold;">fun</span>() -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 1, 2}),  <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">write</span>({foo, 3, 3})  <span style="color: #729fcf; font-weight: bold;">end</span>).
@@ -198,8 +198,8 @@ This number is used to determine whether the transaction is r/o or r/w.
 </div>
 </div>
 
- <div id="outline-container-org83bd18c" class="outline-4">
- <h4 id="org83bd18c"> <span class="section-number-4">1.3.3</span> What's stored in the mnesia log?</h4>
+ <div id="outline-container-org4e94fb9" class="outline-4">
+ <h4 id="org4e94fb9"> <span class="section-number-4">1.3.3</span> What's stored in the mnesia log?</h4>
  <div class="outline-text-4" id="text-1-3-3">
  <p>
 The contents of the  <code>#commit{}</code> record for the current node are written to the mnesia log:
@@ -229,34 +229,34 @@ Note that the commit is only logged on the node that initiated the transaction a
 </div>
 </div>
 
- <div id="outline-container-org4991d02" class="outline-2">
- <h2 id="org4991d02"> <span class="section-number-2">2</span>  <span class="todo TODO">TODO</span> Locker</h2>
+ <div id="outline-container-org684281f" class="outline-2">
+ <h2 id="org684281f"> <span class="section-number-2">2</span>  <span class="todo TODO">TODO</span> Locker</h2>
 </div>
 
- <div id="outline-container-org356b62c" class="outline-2">
- <h2 id="org356b62c"> <span class="section-number-2">3</span>  <span class="todo TODO">TODO</span> Schema</h2>
+ <div id="outline-container-orgeeee904" class="outline-2">
+ <h2 id="orgeeee904"> <span class="section-number-2">3</span>  <span class="todo TODO">TODO</span> Schema</h2>
 </div>
 
- <div id="outline-container-orgfabdc86" class="outline-2">
- <h2 id="orgfabdc86"> <span class="section-number-2">4</span>  <span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
+ <div id="outline-container-org82a06fa" class="outline-2">
+ <h2 id="org82a06fa"> <span class="section-number-2">4</span>  <span class="todo TODO">TODO</span> Transaction aborts and restarts</h2>
 </div>
- <div id="outline-container-orgcccfa58" class="outline-2">
- <h2 id="orgcccfa58"> <span class="section-number-2">5</span>  <span class="todo TODO">TODO</span> Dirty writes</h2>
+ <div id="outline-container-org09f1b8d" class="outline-2">
+ <h2 id="org09f1b8d"> <span class="section-number-2">5</span> Dirty writes</h2>
  <div class="outline-text-2" id="text-5">
 
- <div id="orga3ecd08" class="figure">
+ <div id="org113cbcb" class="figure">
  <p> <object type="image/svg+xml" data="mnesia_dirty_write.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
- <div id="outline-container-org1eb4efd" class="outline-3">
- <h3 id="org1eb4efd"> <span class="section-number-3">5.1</span> Data structures</h3>
+ <div id="outline-container-orgc85beae" class="outline-3">
+ <h3 id="orgc85beae"> <span class="section-number-3">5.1</span> Data structures</h3>
  <div class="outline-text-3" id="text-5-1">
 </div>
- <div id="outline-container-orga7cdd35" class="outline-4">
- <h4 id="orga7cdd35"> <span class="section-number-4">5.1.1</span> What's inside #prep record?</h4>
+ <div id="outline-container-orgc14859b" class="outline-4">
+ <h4 id="orgc14859b"> <span class="section-number-4">5.1.1</span> What's inside #prep record?</h4>
  <div class="outline-text-4" id="text-5-1-1">
  <div class="org-src-container">
  <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">dirty_write</span>({foo, 1, 1}).
@@ -285,8 +285,8 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
- <div id="outline-container-org5ffff57" class="outline-4">
- <h4 id="org5ffff57"> <span class="section-number-4">5.1.2</span> What is sent to the remote node?</h4>
+ <div id="outline-container-orgdcc2100" class="outline-4">
+ <h4 id="orgdcc2100"> <span class="section-number-4">5.1.2</span> What is sent to the remote node?</h4>
  <div class="outline-text-4" id="text-5-1-2">
  <div class="org-src-container">
  <pre class="src src-erlang"> <span style="color: #8ae234; font-weight: bold;">mnesia</span>: <span style="color: #8ae234; font-weight: bold;">dirty_write</span>({foo, 1, 1}).
@@ -309,9 +309,78 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
- <div id="outline-container-org30d91c8" class="outline-2">
- <h2 id="org30d91c8"> <span class="section-number-2">6</span>  <span class="todo TODO">TODO</span> Scalability</h2>
+ <div id="outline-container-orge62190e" class="outline-2">
+ <h2 id="orge62190e"> <span class="section-number-2">6</span> Ext copies</h2>
  <div class="outline-text-2" id="text-6">
+ <p>
+There is an undocumented feature that allows to implement a custom mnesia backends.
+It's called  <code>ext_copies</code> (I guess).
+Let's look at how it can be used.
+</p>
+
+ <p>
+From  <code>mnesia_tm</code>:
+</p>
+
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">do_commit</span>( <span style="color: #eeeeaa;">Tid</span>,  <span style="color: #eeeeaa;">Bin</span>,  <span style="color: #eeeeaa;">DumperMode</span>)  <span style="color: #729fcf; font-weight: bold;">when</span>  <span style="color: #729fcf;">is_binary</span>( <span style="color: #eeeeaa;">Bin</span>) ->
+     <span style="color: #8ae234; font-weight: bold;">do_commit</span>( <span style="color: #eeeeaa;">Tid</span>,  <span style="color: #729fcf;">binary_to_term</span>( <span style="color: #eeeeaa;">Bin</span>),  <span style="color: #eeeeaa;">DumperMode</span>);
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">do_commit</span>( <span style="color: #eeeeaa;">Tid</span>,  <span style="color: #eeeeaa;">C</span>,  <span style="color: #eeeeaa;">DumperMode</span>) ->
+    ...
+     <span style="color: #eeeeaa;">R2</span> =  <span style="color: #8ae234; font-weight: bold;">do_update</span>( <span style="color: #eeeeaa;">Tid</span>, ram_copies,  <span style="color: #eeeeaa;">C</span># <span style="color: #8ae234; font-weight: bold;">commit</span>.ram_copies,  <span style="color: #eeeeaa;">R</span>),
+     <span style="color: #eeeeaa;">R3</span> =  <span style="color: #8ae234; font-weight: bold;">do_update</span>( <span style="color: #eeeeaa;">Tid</span>, disc_copies,  <span style="color: #eeeeaa;">C</span># <span style="color: #8ae234; font-weight: bold;">commit</span>.disc_copies,  <span style="color: #eeeeaa;">R2</span>),
+     <span style="color: #eeeeaa;">R4</span> =  <span style="color: #8ae234; font-weight: bold;">do_update</span>( <span style="color: #eeeeaa;">Tid</span>, disc_only_copies,  <span style="color: #eeeeaa;">C</span># <span style="color: #8ae234; font-weight: bold;">commit</span>.disc_only_copies,  <span style="color: #eeeeaa;">R3</span>),
+     <span style="color: #eeeeaa;">R5</span> =  <span style="color: #8ae234; font-weight: bold;">do_update_ext</span>( <span style="color: #eeeeaa;">Tid</span>,  <span style="color: #eeeeaa;">C</span># <span style="color: #8ae234; font-weight: bold;">commit</span>.ext,  <span style="color: #eeeeaa;">R4</span>),
+    ...
+    .
+
+...
+
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">do_update_ext</span>( <span style="color: #eeeeaa;">_Tid</span>, [],  <span style="color: #eeeeaa;">OldRes</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #eeeeaa;">OldRes</span>;
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">do_update_ext</span>( <span style="color: #eeeeaa;">Tid</span>,  <span style="color: #eeeeaa;">Ext</span>,  <span style="color: #eeeeaa;">OldRes</span>) ->
+     <span style="color: #729fcf; font-weight: bold;">case</span>  <span style="color: #8ae234; font-weight: bold;">lists</span>: <span style="color: #8ae234; font-weight: bold;">keyfind</span>(ext_copies, 1,  <span style="color: #eeeeaa;">Ext</span>)  <span style="color: #729fcf; font-weight: bold;">of</span>
+      false -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #eeeeaa;">OldRes</span>;
+      { <span style="color: #eeeeaa;">_</span>,  <span style="color: #eeeeaa;">Ops</span>} ->
+         <span style="color: #eeeeaa;">Do</span> =  <span style="color: #729fcf; font-weight: bold;">fun</span>({{ext,  <span style="color: #eeeeaa;">_</span>,  <span style="color: #eeeeaa;">_</span>} =  <span style="color: #eeeeaa;">Storage</span>,  <span style="color: #eeeeaa;">Op</span>},  <span style="color: #eeeeaa;">R</span>) ->
+                  <span style="color: #8ae234; font-weight: bold;">do_update</span>( <span style="color: #eeeeaa;">Tid</span>,  <span style="color: #eeeeaa;">Storage</span>, [ <span style="color: #eeeeaa;">Op</span>],  <span style="color: #eeeeaa;">R</span>)
+              <span style="color: #729fcf; font-weight: bold;">end</span>,
+         <span style="color: #8ae234; font-weight: bold;">lists</span>: <span style="color: #8ae234; font-weight: bold;">foldl</span>( <span style="color: #eeeeaa;">Do</span>,  <span style="color: #eeeeaa;">OldRes</span>,  <span style="color: #eeeeaa;">Ops</span>)
+     <span style="color: #729fcf; font-weight: bold;">end</span>.
+</pre>
+</div>
+
+ <p>
+And  <code>mnesia_lib.erl</code> has the following functions inside:
+</p>
+ <div class="org-src-container">
+ <pre class="src src-erlang"> <span style="color: #edd400; font-weight: bold; font-style: italic;">db_put</span>(ram_copies,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span>? <span style="color: #8ae234;">ets_insert</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>), ok;
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_put</span>(disc_copies,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span>? <span style="color: #8ae234;">ets_insert</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>), ok;
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_put</span>(disc_only_copies,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">dets</span>: <span style="color: #8ae234; font-weight: bold;">insert</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>);
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_put</span>({ext,  <span style="color: #eeeeaa;">Alias</span>,  <span style="color: #eeeeaa;">Mod</span>},  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>) ->
+     <span style="color: #eeeeaa;">Mod</span>: <span style="color: #8ae234; font-weight: bold;">insert</span>( <span style="color: #eeeeaa;">Alias</span>,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Val</span>).
+
+
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_erase</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>) ->
+     <span style="color: #8ae234; font-weight: bold;">db_erase</span>( <span style="color: #8ae234; font-weight: bold;">val</span>({ <span style="color: #eeeeaa;">Tab</span>, storage_type}),  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>).
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_erase</span>(ram_copies,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span>? <span style="color: #8ae234;">ets_delete</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>), ok;
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_erase</span>(disc_copies,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span>? <span style="color: #8ae234;">ets_delete</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>), ok;
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_erase</span>(disc_only_copies,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>) -> <span style="color: #edd400; font-weight: bold; font-style: italic;"> </span> <span style="color: #8ae234; font-weight: bold;">dets</span>: <span style="color: #8ae234; font-weight: bold;">delete</span>( <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>);
+ <span style="color: #edd400; font-weight: bold; font-style: italic;">db_erase</span>({ext,  <span style="color: #eeeeaa;">Alias</span>,  <span style="color: #eeeeaa;">Mod</span>},  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>) ->
+     <span style="color: #eeeeaa;">Mod</span>: <span style="color: #8ae234; font-weight: bold;">delete</span>( <span style="color: #eeeeaa;">Alias</span>,  <span style="color: #eeeeaa;">Tab</span>,  <span style="color: #eeeeaa;">Key</span>),
+    ok.
+</pre>
+</div>
+
+ <p>
+So mnesia expects a list of  <code>{{ext, Alias, Module}, Op}</code> tuples in the commit record.
+</p>
+</div>
+</div>
+
+
+ <div id="outline-container-org77f9490" class="outline-2">
+ <h2 id="org77f9490"> <span class="section-number-2">7</span>  <span class="todo TODO">TODO</span> Scalability</h2>
+ <div class="outline-text-2" id="text-7">
  <p>
 As should be evident from the above diagram, transaction latency is expected to grow when the number of nodes in the cluster grows.
 Indeed, we observed this effect in the test with the help of  <a href="https://www.man7.org/linux/man-pages/man8/tc-netem.8.html">netem</a>.
