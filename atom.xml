@@ -6,7 +6,7 @@
 <generator>Emacs webfeeder.el</generator>
 <link>https://blog.erlang.moe/</link>
 <atom:link href="https://blog.erlang.moe/atom.xml" rel="self" type="application/rss+xml"/>
-<lastBuildDate>tis, 16 nov 2021 22:36:22 +0100</lastBuildDate>
+<lastBuildDate>tis, 16 nov 2021 22:46:46 +0100</lastBuildDate>
 <item>
   <title>Mnesia internals</title>
   <description><![CDATA[<div id="content">
